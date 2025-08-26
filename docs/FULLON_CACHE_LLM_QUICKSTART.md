@@ -1,6 +1,6 @@
-# Fullon Cache - LLM Quick Start Guide
+# Fullon Cache - LLM Quick Start Guide for WebSocket Integration
 
-**Redis-based high-performance caching system for cryptocurrency trading operations.**
+**Redis-based high-performance caching system for cryptocurrency trading operations, designed for WebSocket-based real-time access patterns.**
 
 ## Installation
 
@@ -180,15 +180,99 @@ BaseCache (Redis connection)
 
 📖 **See [METHOD_REFERENCE.md](METHOD_REFERENCE.md)** for complete list of all methods demonstrated in examples, organized by cache type with signatures and usage patterns.
 
-## Key Points for LLMs
+## Key Points for WebSocket Integration with LLMs
 
 1. **Always use async context managers**: `async with Cache() as cache:`
 2. **All methods are async**: Use `await` for all cache operations
 3. **Uses fullon_orm models**: Import from `fullon_orm.models` (Trade, Order, Position, etc.)
-4. **Method reference available**: All working methods documented in `METHOD_REFERENCE.md`
-5. **Examples available**: Check `src/fullon_cache/examples/` for working code patterns
-6. **Self-documenting**: Run `help(fullon_cache)` for complete API reference
-7. **No mocking in tests**: Uses real Redis for reliability
-8. **Environment-based config**: Uses `.env` files, no complex configuration
+4. **WebSocket-Ready**: All cache operations integrate seamlessly with WebSocket transport
+5. **Real-time Streaming**: Supports async iterator patterns for live data streaming
+6. **Method reference available**: All working methods documented in `METHOD_REFERENCE.md`
+7. **Examples available**: Check `src/fullon_cache/examples/` for working code patterns
+8. **Self-documenting**: Run `help(fullon_cache)` for complete API reference
+9. **No mocking in tests**: Uses real Redis for reliability
+10. **Environment-based config**: Uses `.env` files, no complex configuration
 
-This library is designed to be immediately usable by LLMs without external documentation - all APIs, examples, and help are built into the package itself.
+### WebSocket Usage Patterns
+
+**For WebSocket servers using fullon_cache:**
+
+```python
+# WebSocket handler pattern:
+import json
+from fullon_cache import TickCache
+
+class WebSocketCacheHandler:
+    async def handle_ticker_request(self, websocket, message):
+        params = message.get('params', {})
+        exchange = params.get('exchange')
+        symbol = params.get('symbol')
+        
+        # Direct fullon_cache integration
+        async with TickCache() as cache:
+            ticker = await cache.get_ticker(exchange, symbol)
+        
+        # Send WebSocket response
+        response = {
+            "request_id": message.get('request_id'),
+            "success": True,
+            "result": {
+                "symbol": symbol,
+                "exchange": exchange,
+                "price": ticker.price if ticker else None,
+                "timestamp": ticker.timestamp if ticker else None
+            }
+        }
+        await websocket.send(json.dumps(response))
+    
+    async def handle_stream_tickers(self, websocket, message):
+        params = message.get('params', {})
+        exchange = params.get('exchange')
+        symbols = params.get('symbols', [])
+        
+        # Real-time streaming with async iterator
+        async with TickCache() as cache:
+            # Note: stream_ticker_updates is conceptual - actual streaming
+            # would use polling or Redis pub/sub patterns
+            while True:
+                for symbol in symbols:
+                    ticker = await cache.get_ticker(exchange, symbol)
+                    if ticker:
+                        update = {
+                            "type": "ticker_update",
+                            "exchange": exchange,
+                            "symbol": symbol,
+                            "price": ticker.price,
+                            "volume": ticker.volume,
+                            "timestamp": ticker.timestamp
+                        }
+                        await websocket.send(json.dumps(update))
+                await asyncio.sleep(1)  # Polling interval
+```
+
+**For WebSocket clients using fullon_cache data:**
+
+```python
+# WebSocket client consuming cache data:
+async def websocket_cache_client():
+    async with websockets.connect("ws://cache-server:8765") as websocket:
+        # Request ticker data
+        request = {
+            "request_id": "req_001",
+            "operation": "get_ticker",
+            "params": {
+                "exchange": "binance",
+                "symbol": "BTC/USDT"
+            }
+        }
+        await websocket.send(json.dumps(request))
+        
+        # Receive response
+        response = await websocket.recv()
+        data = json.loads(response)
+        
+        if data.get('success'):
+            print(f"Ticker: ${data['result']['price']}")
+```
+
+This library is designed to be immediately usable by LLMs for WebSocket-based cache access without external documentation - all APIs, examples, and help are built into the package itself.
