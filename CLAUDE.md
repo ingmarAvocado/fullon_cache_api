@@ -49,22 +49,37 @@ python -m fullon_cache_api.standalone_server
 ### **2. fullon_cache Integration Pattern**
 ```python
 # READ-ONLY cache operations:
-from fullon_cache import TickCache, OrdersCache, BotCache
+from fullon_cache import TickCache, OrdersCache, BotCache, TradesCache, AccountCache, OHLCVCache
 
-# Ticker data queries
+# Ticker data queries (using fullon_orm models)
+from fullon_orm.models import Symbol
 async with TickCache() as cache:
-    ticker = await cache.get_ticker("binance", "BTC/USDT")
-    all_tickers = await cache.get_all_tickers("binance")
+    symbol = Symbol(symbol="BTC/USDT", cat_ex_id=1, base="BTC", quote="USDT")
+    ticker = await cache.get_ticker(symbol, "binance")  # Symbol object first
+    # Note: get_all_tickers method needs verification from actual API
 
 # Order queue status  
 async with OrdersCache() as cache:
-    queue_size = await cache.get_queue_size("binance")
+    queue_size = await cache.get_queue_length("binance")  # Correct method name
     order_status = await cache.get_order_status("order123")
 
 # Bot coordination status
 async with BotCache() as cache:
-    bot_status = await cache.get_bot_status("bot_1")
-    is_blocked = await cache.is_exchange_blocked("binance", "BTC/USDT")
+    is_blocked = await cache.is_blocked("binance", "BTC/USDT")  # Returns bot_id or None
+    bot_data = await cache.get_bots()  # Get all bots dict
+
+# Trade data retrieval
+async with TradesCache() as cache:
+    trades = await cache.get_trades("BTC/USDT", "binance")
+
+# Account positions and balances
+async with AccountCache() as cache:
+    positions = await cache.get_positions(1001)  # exchange_id
+    balances = await cache.get_user_balances(1001)
+
+# OHLCV data retrieval  
+async with OHLCVCache() as cache:
+    bars = await cache.get_latest_ohlcv_bars("BTCUSD", "1m", count=100)
 ```
 
 ### **3. Read-Only Cache API Endpoints** (with namespace separation)
@@ -133,26 +148,29 @@ fullon_cache_api/
 ### **1. Read-Only Cache Repository Endpoint Pattern**
 ```python
 # Standard pattern for all READ-ONLY cache endpoints:
+from fullon_orm.models import Symbol
+
 @router.get("/{exchange}/{symbol}/ticker", response_model=TickerResponse)
 async def get_ticker(
     exchange: str,
     symbol: str
 ):
-    # 1. Validate exchange and symbol
-    validate_exchange_symbol(exchange, symbol)
+    # 1. Validate exchange and symbol, create Symbol object
+    symbol_obj = Symbol(symbol=symbol, cat_ex_id=1, base=symbol.split("/")[0], quote=symbol.split("/")[1])
     
-    # 2. READ-ONLY cache operation
+    # 2. READ-ONLY cache operation using fullon_orm models
     async with TickCache() as cache:
-        ticker = await cache.get_ticker(exchange, symbol)
+        ticker = await cache.get_ticker(symbol_obj, exchange)
         if not ticker:
-            raise HTTPException(status_code=404, detail="Ticker not found in cache")
+            raise HTTPException(status_code=404, detail=f"Ticker {symbol} not found in {exchange} cache")
     
     # 3. Return formatted response (no modifications to cache)
     return TickerResponse(
         exchange=exchange,
         symbol=symbol,
         ticker=ticker,
-        cached_at=ticker.timestamp
+        cached_at=ticker.timestamp if hasattr(ticker, 'timestamp') else None,
+        cache_hit=True
     )
 ```
 
@@ -166,12 +184,14 @@ async def check_cache_health():
     async with TickCache() as cache:
         return await cache.test()  # Redis connection test
 
-# Multiple cache operations
+# Multiple cache operations (corrected method calls)
 async def get_trading_status(user_id: str):
     async with OrdersCache() as orders_cache, BotCache() as bot_cache:
-        order_count = await orders_cache.get_user_order_count(user_id)
-        bot_status = await bot_cache.get_user_bot_status(user_id)
-        return {"orders": order_count, "bots": bot_status}
+        # Note: user-specific methods need verification from actual fullon_cache API
+        # Using exchange-based operations as documented in fullon_cache
+        queue_size = await orders_cache.get_queue_length("binance")  # exchange-based
+        bots_data = await bot_cache.get_bots()  # returns all bots dict
+        return {"queue_size": queue_size, "bots": bots_data}
 ```
 
 ### **3. Error Handling Pattern**
@@ -368,10 +388,19 @@ open http://localhost:8000/redoc   # ReDoc interface
 
 ## 📖 Key References
 
-- **Cache Operations**: See fullon_cache documentation for all available methods
+- **fullon_cache Methods**: See `docs/FULLON_CACHE_METHOD_REFERENCE.md` for all available cache operations
+- **fullon_orm Methods**: See `docs/FULLON_ORM_LLM_METHOD_REFERENCE.md` for repository patterns
+- **fullon_cache Quick Start**: See `docs/FULLON_CACHE_LLM_QUICKSTART.md` for integration patterns
+- **fullon_orm Integration**: See `docs/FULLON_ORM_LLM_README.md` for model-based API usage
 - **Examples**: Working code in `examples/` directory
 - **Tests**: Pattern examples in `tests/conftest.py`
-- **fullon_cache Guide**: Refer to dependency documentation
+
+### **🚨 Critical Integration Points**
+- **Model Usage**: Always use `fullon_orm.models` (Symbol, Tick, Trade, etc.) with cache operations
+- **Async Context Managers**: Required for all cache operations (`async with Cache() as cache:`)
+- **Method Signatures**: TickCache.get_ticker(symbol: Symbol, exchange: str), not (exchange, symbol)
+- **Queue Operations**: Use `get_queue_length()` not `get_queue_size()`
+- **Bot Blocking**: Use `is_blocked()` which returns bot_id or None, not boolean
 
 ## ⚠️ Critical Rules
 
@@ -399,8 +428,18 @@ data = await cache.get_ticker("binance", "BTC/USDT")  # No cleanup
 ```python
 # Provide meaningful responses for cache misses:
 async def get_cached_ticker(exchange: str, symbol: str):
+    from fullon_orm.models import Symbol
+    
+    # Create Symbol object for fullon_cache API
+    symbol_obj = Symbol(
+        symbol=symbol, 
+        cat_ex_id=1,  # Exchange category ID
+        base=symbol.split("/")[0], 
+        quote=symbol.split("/")[1]
+    )
+    
     async with TickCache() as cache:
-        ticker = await cache.get_ticker(exchange, symbol)
+        ticker = await cache.get_ticker(symbol_obj, exchange)
         if not ticker:
             raise HTTPException(
                 status_code=404, 
@@ -415,7 +454,7 @@ async def get_cached_ticker(exchange: str, symbol: str):
 @router.get("/health")
 async def cache_health():
     try:
-        async with BaseCache() as cache:
+        async with TickCache() as cache:  # Use actual cache class
             await cache.test()
         return {"status": "healthy", "redis": "connected"}
     except Exception as e:
@@ -428,9 +467,20 @@ async def cache_health():
 import time
 
 async def get_ticker_with_metrics(exchange: str, symbol: str):
+    from fullon_orm.models import Symbol
+    
     start_time = time.time()
+    
+    # Create Symbol object for fullon_cache
+    symbol_obj = Symbol(
+        symbol=symbol, 
+        cat_ex_id=1, 
+        base=symbol.split("/")[0], 
+        quote=symbol.split("/")[1]
+    )
+    
     async with TickCache() as cache:
-        result = await cache.get_ticker(exchange, symbol)
+        result = await cache.get_ticker(symbol_obj, exchange)
     
     duration = (time.time() - start_time) * 1000
     logger.info("Cache operation completed",
@@ -473,10 +523,14 @@ async def get_ticker(exchange: str, symbol: str):
     logger.info("Ticker request started", exchange=exchange, symbol=symbol)
     
     try:
-        # Cache operation with timing
+        # Cache operation with timing using fullon_orm models
+        from fullon_orm.models import Symbol
+        
         start_time = time.time()
+        symbol_obj = Symbol(symbol=symbol, cat_ex_id=1, base=symbol.split("/")[0], quote=symbol.split("/")[1])
+        
         async with TickCache() as cache:
-            ticker = await cache.get_ticker(exchange, symbol)
+            ticker = await cache.get_ticker(symbol_obj, exchange)
         
         duration_ms = (time.time() - start_time) * 1000
         
@@ -567,9 +621,12 @@ async def log_cache_operation(operation: str, **context):
 
 # Usage:
 async def get_ticker(exchange: str, symbol: str):
+    from fullon_orm.models import Symbol
+    
     async with log_cache_operation("get_ticker", exchange=exchange, symbol=symbol):
+        symbol_obj = Symbol(symbol=symbol, cat_ex_id=1, base=symbol.split("/")[0], quote=symbol.split("/")[1])
         async with TickCache() as cache:
-            return await cache.get_ticker(exchange, symbol)
+            return await cache.get_ticker(symbol_obj, exchange)
 ```
 
 ### **5. Health Check and Monitoring Integration**
