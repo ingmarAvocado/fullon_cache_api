@@ -5,20 +5,20 @@
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
 
-**FastAPI Gateway for fullon_cache with LRRS-compliant architecture for read-only cache operations**
+**WebSocket-Based Cache API for fullon_cache with LRRS-compliant architecture for real-time read-only cache operations**
 
-A focused, LRRS-compliant (Little, Responsible, Reusable, Separate) library that provides a complete **read-only** REST API gateway for Redis cache operations. Every fullon_cache **read operation** is exposed via secure, high-performance HTTP endpoints.
+A focused, LRRS-compliant (Little, Responsible, Reusable, Separate) library that provides a complete **read-only** WebSocket API for Redis cache operations. Every fullon_cache **read operation** is exposed via secure, high-performance WebSocket transport with async iterator patterns.
 
-**🔍 READ-ONLY API**: This library **only** exposes data retrieval operations from Redis cache. No updates, inserts, or write operations are in scope.
+**🔍 READ-ONLY WEBSOCKET API**: This library **only** exposes data retrieval operations from Redis cache via real-time WebSocket connections. No updates, inserts, or write operations are in scope.
 
 ## ✨ Features
 
-- **📊 Complete Cache Read Coverage** - Every fullon_cache read operation exposed via REST API
-- **⚡ Real-Time Optimized** - Built for efficient cache data retrieval and monitoring
-- **🔄 High Performance** - uvloop optimization, async throughout, Redis connection pooling
-- **🧪 100% Test Coverage** - TDD-driven development with comprehensive tests
-- **📚 Auto-Generated Docs** - Interactive OpenAPI/Swagger documentation
-- **🐳 Docker Ready** - Production-ready containerization
+- **📊 Complete Cache Read Coverage** - Every fullon_cache read operation exposed via WebSocket API
+- **⚡ Real-Time WebSocket Streaming** - Built for live cache data streaming with async iterators (NO CALLBACKS!)
+- **🔄 High Performance** - uvloop optimization, async throughout, WebSocket connection pooling
+- **🧪 100% Test Coverage** - TDD-driven development with comprehensive WebSocket tests
+- **📡 WebSocket Transport** - Real-time cache operations via WebSocket with context managers
+- **🐳 Docker Ready** - Production-ready WebSocket server containerization
 - **🔄 CI/CD Pipeline** - Automated testing, linting, and deployment
 
 ## 🏗️ Architecture
@@ -27,52 +27,62 @@ A focused, LRRS-compliant (Little, Responsible, Reusable, Separate) library that
 
 Following LRRS principles for maximum ecosystem integration:
 
-- **Little**: Single purpose - READ-ONLY Redis cache data API gateway
-- **Responsible**: Clear separation between routing, validation, and read-only cache operations  
-- **Reusable**: Works with any fullon_cache deployment, composable into master_api
-- **Separate**: Zero coupling to other systems beyond fullon_cache + fullon_log
+- **Little**: Single purpose - READ-ONLY Redis cache data WebSocket API
+- **Responsible**: Clear separation between WebSocket handlers, validation, and read-only cache operations  
+- **Reusable**: Works with any fullon_cache deployment, composable WebSocket server patterns
+- **Separate**: Zero coupling to other systems beyond fullon_cache + fullon_log dependencies
 
 ### Fullon Ecosystem Integration
 
-This library is designed to integrate seamlessly with the broader fullon trading ecosystem:
+This library is designed to integrate seamlessly with the broader fullon trading ecosystem via WebSocket transport:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Fullon Master Trading API                   │
+│                  Fullon Trading System Ecosystem               │
 ├─────────────────┬─────────────────┬─────────────────────────────┤
-│  📊 Market Data │  🗄️ Database    │  ⚡ Cache & Real-time       │
+│  📊 HTTP APIs   │  🗄️ HTTP APIs   │  📡 WebSocket API           │
 │                 │                 │                             │
 │ fullon_ohlcv_api│ fullon_orm_api  │ fullon_cache_api            │
 │                 │                 │                             │
-│ Historical data │ Persistent      │ Live feeds &                │
-│ Time-series     │ Trade records   │ Real-time queues            │
-│ OHLCV analysis  │ Positions       │ Price alerts                │
-│                 │ Portfolio data  │ Event streaming             │
+│ Historical data │ Persistent      │ Real-time cache streams     │
+│ Time-series     │ Trade records   │ Live ticker feeds           │
+│ OHLCV analysis  │ Positions       │ Real-time order queues     │
+│                 │ Portfolio data  │ Live bot coordination       │
 └─────────────────┴─────────────────┴─────────────────────────────┘
 ```
 
-### API Structure Benefits
+### Transport Protocol Benefits
 
 **🎯 Clear Separation of Concerns**
-- `/api/v1/market/` - Historical & analytical data (READ-ONLY)
-- `/api/v1/db/` - Persistent application data (CRUD operations)  
-- `/api/v1/cache/` - Real-time & temporary data (READ-ONLY)
+- `HTTP https://api.fullon.com/market/` - Historical & analytical data (READ-ONLY)
+- `HTTP https://api.fullon.com/db/` - Persistent application data (CRUD operations)  
+- `WS ws://cache-server:8765/` - Real-time & temporary data streaming (READ-ONLY)
 
-**📚 Documentation Benefits**
-- Combined Swagger/OpenAPI docs with organized tags
-- Clear endpoint categorization
-- Consistent versioning across all modules
+**📚 WebSocket Benefits**
+- Real-time data streaming with async iterators (NO CALLBACKS!)
+- Efficient WebSocket connection management with context managers
+- Live cache data feeds with automatic reconnection
 
 ```
 fullon_cache_api/
 ├── src/fullon_cache_api/
-│   ├── dependencies/         # Read-only cache session management
-│   ├── routers/             # Read-only cache endpoints (tickers, orders, bots)
-│   ├── models/              # Pydantic request/response models
-│   └── gateway.py           # Main FastAPI application
-├── examples/                # Working code examples
-├── tests/                   # Comprehensive test suite
-└── docs/                    # Additional documentation
+│   ├── __init__.py              # Library exports: fullon_cache_api, CacheWebSocketServer
+│   ├── websocket_server.py      # Main WebSocket server for cache operations
+│   ├── websocket_client.py      # WebSocket client library
+│   └── cache_handlers/          # Cache operation handlers
+│       ├── tick_handler.py      # Ticker cache operations
+│       ├── account_handler.py   # Account cache operations
+│       ├── order_handler.py     # Order cache operations
+│       ├── bot_handler.py       # Bot cache operations
+│       ├── trade_handler.py     # Trade cache operations
+│       ├── ohlcv_handler.py     # OHLCV cache operations
+│       └── process_handler.py   # Process monitoring operations
+├── examples/                    # Working WebSocket examples
+│   ├── basic_usage.py           # WebSocket context manager demo
+│   ├── example_tick_cache.py    # Working ticker WebSocket example
+│   └── run_all.py               # Run all examples with selection
+├── tests/                       # Comprehensive test suite
+└── docs/                        # Additional documentation
 ```
 
 ## 🚀 Quick Start
@@ -107,220 +117,284 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_DB=0
 REDIS_PASSWORD=optional
-API_HOST=0.0.0.0
-API_PORT=8000
+WEBSOCKET_HOST=0.0.0.0
+WEBSOCKET_PORT=8765
 LOG_LEVEL=INFO
 ```
 
-### Run the API
+### Run the WebSocket Server
 
 ```bash
-# Development server
+# Development WebSocket server
 make dev
 
-# Production server  
+# Production WebSocket server  
 make prod
 
-# View API documentation
-# Open http://localhost:8000/docs
+# Run WebSocket examples
+python examples/basic_usage.py
+python examples/example_tick_cache.py
 ```
 
 ## 📖 Usage Examples
 
-### Ticker Cache Operations
+### WebSocket Context Manager Pattern
 
 ```python
-import httpx
-from datetime import datetime, timezone, timedelta
+from fullon_cache_api import fullon_cache_api
+import asyncio
 
-# Get ticker data from cache
-response = httpx.get("http://localhost:8000/api/tickers/binance/BTC-USDT")
-ticker = response.json()
+# WebSocket context manager for cache operations
+async def main():
+    async with fullon_cache_api() as handler:
+        # One-shot queries via WebSocket
+        ticker = await handler.get_ticker("binance", "BTC/USDT")
+        print(f"Price: ${ticker['price']}")
+        
+        # Real-time streaming with async iterators (NO CALLBACKS!)
+        async for update in handler.stream_tickers("binance", ["BTC/USDT"]):
+            print(f"Live: {update['price']}")
+            break  # Demo: stop after first update
 
-# Get all tickers for exchange
-response = httpx.get("http://localhost:8000/api/tickers/binance")
-all_tickers = response.json()
-
-# Check ticker cache status
-response = httpx.get("http://localhost:8000/api/tickers/health")
-health_status = response.json()
+asyncio.run(main())
 ```
 
-### Account Cache Operations
+### WebSocket Account Operations
 
 ```python
-# Get user positions from cache
-response = httpx.get("http://localhost:8000/api/accounts/user123/positions")
-positions = response.json()
+from fullon_cache_api import fullon_cache_api
 
-# Get account balances
-response = httpx.get("http://localhost:8000/api/accounts/user123/balances")
-balances = response.json()
+async def account_operations():
+    async with fullon_cache_api() as handler:
+        # Get user positions via WebSocket
+        positions = await handler.get_positions(1001)  # user_id
+        print(f"Positions: {positions}")
+        
+        # Get account balances via WebSocket
+        balance = await handler.get_balance(1001, "BTC")
+        print(f"BTC Balance: {balance}")
+        
+        # Real-time position streaming
+        async for position_update in handler.stream_positions(1001):
+            print(f"Position Update: {position_update}")
+            break  # Demo: stop after first update
 
-# Get account cache summary
-response = httpx.get("http://localhost:8000/api/accounts/summary")
-summary = response.json()
+asyncio.run(account_operations())
 ```
 
-### Order Cache Operations
+### WebSocket Order Operations
 
 ```python
-# Get order status from cache
-response = httpx.get("http://localhost:8000/api/orders/order123/status")
-order_status = response.json()
+from fullon_cache_api import fullon_cache_api
 
-# Get order queue metrics
-response = httpx.get("http://localhost:8000/api/orders/queue/size")
-queue_metrics = response.json()
+async def order_operations():
+    async with fullon_cache_api() as handler:
+        # Get order status via WebSocket
+        order_status = await handler.get_order_status("order123")
+        print(f"Order Status: {order_status}")
+        
+        # Get order queue metrics via WebSocket
+        queue_size = await handler.get_queue_length("binance")
+        print(f"Queue Size: {queue_size}")
+        
+        # Real-time order queue streaming
+        async for queue_update in handler.stream_order_queue("binance"):
+            print(f"Queue Update: {queue_update}")
+            break  # Demo: stop after first update
 
-# Get user orders from cache
-response = httpx.get("http://localhost:8000/api/orders/user123/orders")
-user_orders = response.json()
+asyncio.run(order_operations())
 ```
 
-### Bot Cache Operations
+### WebSocket Bot Operations
 
 ```python
-# Get bot coordination status
-response = httpx.get("http://localhost:8000/api/bots/bot123/status")
-bot_status = response.json()
+from fullon_cache_api import fullon_cache_api
 
-# Check exchange blocking status
-response = httpx.get("http://localhost:8000/api/bots/binance/BTC-USDT/blocked")
-blocking_status = response.json()
+async def bot_operations():
+    async with fullon_cache_api() as handler:
+        # Get bot coordination status via WebSocket
+        bot_status = await handler.get_bot_status("bot123")
+        print(f"Bot Status: {bot_status}")
+        
+        # Check exchange blocking status via WebSocket
+        blocking_status = await handler.is_blocked("binance", "BTC/USDT")
+        print(f"Blocked by: {blocking_status or 'None'}")
+        
+        # Get all bots via WebSocket
+        all_bots = await handler.get_bots()
+        print(f"All Bots: {all_bots}")
+        
+        # Real-time bot status streaming
+        async for bot_update in handler.stream_bot_status():
+            print(f"Bot Update: {bot_update}")
+            break  # Demo: stop after first update
 
-# Get coordination info
-response = httpx.get("http://localhost:8000/api/bots/coordination/status")
-coordination = response.json()
+asyncio.run(bot_operations())
 ```
 
-### Trade Cache Operations
+### WebSocket Trade Operations
 
 ```python
-# Get trade queue status
-response = httpx.get("http://localhost:8000/api/trades/queue/status")
-queue_status = response.json()
+from fullon_cache_api import fullon_cache_api
 
-# Get trade processing metrics
-response = httpx.get("http://localhost:8000/api/trades/performance/metrics")
-metrics = response.json()
+async def trade_operations():
+    async with fullon_cache_api() as handler:
+        # Get trade data via WebSocket
+        trades = await handler.get_trades("BTC/USDT", "binance")
+        print(f"Trades: {len(trades)} found")
+        
+        # Get trade status via WebSocket
+        trade_status = await handler.get_trade_status("trade_key_123")
+        print(f"Trade Status: {trade_status}")
+        
+        # Real-time trade streaming
+        async for trade_update in handler.stream_trade_updates("binance"):
+            print(f"Trade Update: {trade_update}")
+            break  # Demo: stop after first update
+
+asyncio.run(trade_operations())
 ```
 
-## 🔌 Library Usage (Master API Integration)
+## 🔌 WebSocket Server Usage
 
-### Direct Gateway Usage
-
-```python
-from fullon_cache_api import FullonCacheGateway
-
-# Create gateway instance
-gateway = FullonCacheGateway(
-    title="Master API - Cache Module",
-    prefix="/cache"  # All routes prefixed with /cache
-)
-
-# Get the FastAPI app
-app = gateway.get_app()
-```
-
-### Router Composition for Master API
+### WebSocket Server Setup
 
 ```python
-from fastapi import FastAPI
-from fullon_cache_api import get_all_routers
+from fullon_cache_api import CacheWebSocketServer
+import asyncio
 
-# Create main FastAPI app
-app = FastAPI(title="Fullon Master API", version="1.0.0")
-
-# Mount Cache routers
-for router in get_all_routers():
-    app.include_router(router, prefix="/cache", tags=["Cache"])
+async def main():
+    # Create WebSocket server instance
+    server = CacheWebSocketServer(
+        host="localhost",
+        port=8765
+    )
     
-# Routes available under /cache/ prefix
-# /cache/tickers/{exchange}/{symbol}
-# /cache/orders/{order_id}/status
-# /cache/bots/{bot_id}/status
-# etc.
+    # Start the WebSocket server
+    await server.start()
+    print("WebSocket cache server running on ws://localhost:8765")
+    
+    # Keep server running
+    try:
+        await server.wait_for_completion()
+    except KeyboardInterrupt:
+        await server.stop()
+
+asyncio.run(main())
 ```
 
-### Multiple Library Composition
+### WebSocket Client Integration
 
 ```python
-from fastapi import FastAPI
+from fullon_cache_api import fullon_cache_api
+import asyncio
 
-# Fullon Master Trading API with complete ecosystem
-app = FastAPI(title="Fullon Master Trading API", version="1.0.0")
+# WebSocket client for cache operations
+async def websocket_client_example():
+    # Connect to WebSocket cache server
+    async with fullon_cache_api("ws://cache-server:8765") as handler:
+        # Real-time ticker monitoring
+        async for ticker in handler.stream_tickers("binance", ["BTC/USDT"]):
+            print(f"Live Price: ${ticker['price']}")
+            
+            # Get current order queue status
+            queue_size = await handler.get_queue_length("binance")
+            if queue_size < 10:
+                print(f"Low queue: {queue_size} orders")
+                break
 
-# Database operations
-from fullon_orm_api import get_all_routers as get_orm_routers
-for router in get_orm_routers():
-    app.include_router(router, prefix="/api/v1/db", tags=["Database"])
-
-# Cache operations  
-from fullon_cache_api import get_all_routers as get_cache_routers
-for router in get_cache_routers():
-    app.include_router(router, prefix="/api/v1/cache", tags=["Cache"])
-
-# Market data operations
-from fullon_ohlcv_api import get_all_routers as get_ohlcv_routers
-for router in get_ohlcv_routers():
-    app.include_router(router, prefix="/api/v1/market", tags=["Market Data"])
-
-# Results in clean API separation:
-# /api/v1/db/trades/              - Persistent trade records
-# /api/v1/cache/trades/queue      - Real-time trade queue
-# /api/v1/market/trades/          - Historical market data
-# /docs                           - Combined documentation
+asyncio.run(websocket_client_example())
 ```
 
-## 📊 API Endpoints (READ-ONLY)
+### Multi-Service Architecture
 
-### Cache Data Endpoints (Standalone)
+```python
+# Fullon Trading System with Protocol Separation
 
-When used standalone, endpoints are accessible directly:
-- **GET** `/api/tickers/{exchange}/{symbol}` - Get ticker from cache
-- **GET** `/api/tickers/{exchange}` - Get all tickers for exchange  
-- **GET** `/api/orders/{order_id}/status` - Get order status from cache
-- **GET** `/api/bots/{bot_id}/status` - Get bot coordination status
+# WebSocket Cache Server (Real-time data)
+from fullon_cache_api import CacheWebSocketServer
 
-### Master API Integration (Recommended)
+# HTTP Database API (Persistent data)
+from fullon_orm_api import DatabaseHTTPServer
 
-When integrated into the master API, endpoints are prefixed with `/api/v1/cache`:
+# HTTP Market Data API (Historical data)
+from fullon_ohlcv_api import MarketDataHTTPServer
 
-**⚡ Cache Operations** (`/api/v1/cache/`)
-- **GET** `/api/v1/cache/tickers/{exchange}/{symbol}` - Ticker data from Redis
-- **GET** `/api/v1/cache/tickers/{exchange}` - All tickers for exchange
-- **GET** `/api/v1/cache/accounts/{user_id}/positions` - Account positions
-- **GET** `/api/v1/cache/accounts/{user_id}/balances` - Account balances
-- **GET** `/api/v1/cache/orders/{order_id}/status` - Order status from cache
-- **GET** `/api/v1/cache/orders/queue/size` - Order queue metrics
-- **GET** `/api/v1/cache/bots/{bot_id}/status` - Bot coordination status
-- **GET** `/api/v1/cache/bots/{exchange}/{symbol}/blocked` - Exchange blocking
-- **GET** `/api/v1/cache/trades/queue/status` - Trade processing queue
-- **GET** `/api/v1/cache/ohlcv/{symbol}/{timeframe}` - Cached OHLCV data
-- **GET** `/api/v1/cache/processes/status` - Process monitoring
+async def start_all_services():
+    # WebSocket server for real-time cache data
+    cache_server = CacheWebSocketServer(host="0.0.0.0", port=8765)
+    await cache_server.start()
+    print("WebSocket Cache Server: ws://localhost:8765")
+    
+    # HTTP servers would start separately
+    # Database API: http://localhost:8000/db/
+    # Market API: http://localhost:8001/market/
+    
+    # Results in clean protocol separation:
+    # ws://cache-server:8765           - Real-time cache data
+    # http://db-server:8000/db/        - Persistent records
+    # http://market-server:8001/market/ - Historical data
+    
+    await cache_server.wait_for_completion()
 
-**🗄️ Database Operations** (`/api/v1/db/`) - *via fullon_orm_api*
-- **GET** `/api/v1/db/trades/` - Persistent trade records  
-- **POST** `/api/v1/db/trades/` - Store trade records
-- **GET** `/api/v1/db/positions/` - Trading positions
+asyncio.run(start_all_services())
+```
 
-**📊 Market Data Operations** (`/api/v1/market/`) - *via fullon_ohlcv_api*
-- **GET** `/api/v1/market/trades/{exchange}/{symbol}` - Historical trade data
-- **GET** `/api/v1/market/candles/{exchange}/{symbol}/{timeframe}` - OHLCV candles
-- **GET** `/api/v1/market/exchanges` - Available exchanges
+## 📊 WebSocket Operations (READ-ONLY)
 
-### System Endpoints
+### WebSocket Operations (Direct)
 
-- **GET** `/health` - Health check endpoint
-- **GET** `/` - API information and links  
-- **GET** `/docs` - Interactive Swagger documentation (combined when using master API)
-- **GET** `/redoc` - ReDoc documentation
+When using the WebSocket client, operations are accessible directly:
+- **get_ticker(exchange, symbol)** - Get ticker from cache via WebSocket
+- **get_all_tickers(exchange)** - Get all tickers for exchange via WebSocket
+- **get_order_status(order_id)** - Get order status from cache via WebSocket
+- **get_bot_status(bot_id)** - Get bot coordination status via WebSocket
+
+### WebSocket Cache Operations
+
+**⚡ Query Operations** (await response)
+- **get_ticker(exchange, symbol)** - Ticker data from Redis via WebSocket
+- **get_all_tickers(exchange)** - All tickers for exchange via WebSocket
+- **get_positions(user_id)** - Account positions via WebSocket
+- **get_balance(user_id, currency)** - Account balances via WebSocket
+- **get_order_status(order_id)** - Order status from cache via WebSocket
+- **get_queue_length(exchange)** - Order queue metrics via WebSocket
+- **get_bot_status(bot_id)** - Bot coordination status via WebSocket
+- **is_blocked(exchange, symbol)** - Exchange blocking status via WebSocket
+- **get_trades(symbol, exchange)** - Trade data from cache via WebSocket
+- **get_latest_ohlcv_bars(symbol, timeframe)** - Cached OHLCV data via WebSocket
+- **get_system_health()** - Process monitoring via WebSocket
+
+**📡 Streaming Operations** (async iterators - NO CALLBACKS!)
+- **stream_tickers(exchange, symbols)** - Real-time ticker updates
+- **stream_positions(user_id)** - Live position updates
+- **stream_order_queue(exchange)** - Real-time queue updates
+- **stream_bot_status()** - Live bot status updates
+- **stream_trade_updates(exchange)** - Real-time trade stream
+- **stream_ohlcv(symbol, timeframe)** - Live OHLCV updates
+- **stream_process_health()** - Real-time system monitoring
+
+**🗄️ Database Operations** (HTTP) - *via fullon_orm_api*
+- **GET** `http://db-server/trades/` - Persistent trade records  
+- **POST** `http://db-server/trades/` - Store trade records
+- **GET** `http://db-server/positions/` - Trading positions
+
+**📊 Market Data Operations** (HTTP) - *via fullon_ohlcv_api*
+- **GET** `http://market-server/trades/{exchange}/{symbol}` - Historical trade data
+- **GET** `http://market-server/candles/{exchange}/{symbol}/{timeframe}` - OHLCV candles
+- **GET** `http://market-server/exchanges` - Available exchanges
+
+### WebSocket System Operations
+
+- **ping()** - WebSocket connection health check
+- **get_system_health()** - System status via WebSocket
+- **WebSocket Server** - Built-in WebSocket server with connection management
+- **Examples** - Working code examples in `examples/` directory
 
 ## 🧪 Testing
 
 ```bash
-# Run all tests
+# Run all WebSocket tests
 make test
 
 # Run tests with coverage
@@ -330,8 +404,12 @@ make test-cov
 ./run_test.py
 
 # Run specific test category
-poetry run pytest tests/unit/ -v
-poetry run pytest tests/integration/ -v
+poetry run pytest tests/test_websocket_server.py -v
+poetry run pytest tests/integration/test_websocket_workflows.py -v
+
+# Test WebSocket examples
+python examples/basic_usage.py
+python examples/example_tick_cache.py
 ```
 
 ## 🛠️ Development
@@ -349,50 +427,76 @@ make lint
 # Run all checks
 make check
 
-# Start development server with auto-reload
+# Start development WebSocket server with auto-reload
 make dev
+
+# Run WebSocket examples
+python examples/basic_usage.py
 ```
 
 ## 📈 Performance Features
 
-### Redis Cache Optimizations (READ-ONLY)
-- **Connection Pooling**: Optimized Redis connections for read operations
-- **Data Serialization**: Efficient JSON serialization for cached data
-- **Query Optimization**: Fast Redis key-value lookups
-- **Memory Management**: Efficient handling of large cached datasets
+### WebSocket Optimizations (READ-ONLY)
+- **Connection Reuse**: Long-lived WebSocket connections for multiple operations
+- **Async Iterators**: Memory-efficient streaming without callback overhead
+- **Message Batching**: Efficient JSON message serialization
+- **Concurrent Streams**: Multiple async iterators per WebSocket connection
 
-### Async Architecture (READ-ONLY)
-- **Async Throughout**: All read operations are non-blocking
-- **Connection Pooling**: Optimized Redis connections for reads
-- **Concurrent Processing**: Multiple read requests handled simultaneously
-- **Memory Efficient**: Streaming for large cache datasets retrieval
+### Real-Time Architecture (READ-ONLY)
+- **Async Throughout**: All WebSocket operations are non-blocking
+- **Connection Pooling**: Optimized WebSocket connection management
+- **Stream Multiplexing**: Single connection supports multiple data streams
+- **Live Monitoring**: Real-time cache performance via WebSocket streams
 
-## 📊 Data Models
+## 📊 WebSocket Message Models
 
-### Ticker Cache Model
+### WebSocket Request Message
 ```python
 {
-    "exchange": "binance",
-    "symbol": "BTC-USDT",
-    "ticker": {
-        "bid": 45000.0,
-        "ask": 45050.0,
-        "last": 45025.0,
-        "volume": 1234.5
-    },
-    "cached_at": "2024-01-01T12:00:00Z",
-    "cache_hit": true
+    "request_id": "uuid-string",
+    "operation": "get_ticker",
+    "params": {
+        "exchange": "binance",
+        "symbol": "BTC/USDT"
+    }
 }
 ```
 
-### Order Queue Model
+### WebSocket Response Message
 ```python
 {
-    "queue_name": "binance_orders",
-    "size": 150,
-    "processing_rate": 25.5,
-    "health_status": "healthy",
-    "last_processed": "2024-01-01T12:00:00Z"
+    "request_id": "uuid-string",
+    "success": True,
+    "result": {
+        "symbol": "BTC/USDT",
+        "exchange": "binance",
+        "price": 47000.50,
+        "volume": 1250.0,
+        "timestamp": 1640995200.123
+    }
+}
+```
+
+### WebSocket Stream Message
+```python
+{
+    "type": "ticker_update",
+    "exchange": "binance",
+    "symbol": "BTC/USDT",
+    "price": 47100.25,
+    "volume": 1275.0,
+    "timestamp": 1640995201.456,
+    "update_id": 123
+}
+```
+
+### WebSocket Error Message
+```python
+{
+    "request_id": "uuid-string",
+    "success": False,
+    "error_code": "CACHE_MISS",
+    "error": "Ticker BTC/USDT not found in binance cache"
 }
 ```
 
@@ -401,10 +505,10 @@ make dev
 ### Docker
 
 ```bash
-# Build image
+# Build WebSocket server image
 make docker-build
 
-# Run container
+# Run WebSocket server container
 make docker-run
 ```
 
@@ -414,8 +518,8 @@ make docker-run
 # Install production dependencies only
 poetry install --no-dev
 
-# Run with production ASGI server
-poetry run uvicorn src.fullon_cache_api.main:app --host 0.0.0.0 --port 8000 --workers 4
+# Run with production WebSocket server
+poetry run python -m fullon_cache_api.websocket_server --host 0.0.0.0 --port 8765
 ```
 
 ## 🤝 Contributing
@@ -436,6 +540,8 @@ poetry run uvicorn src.fullon_cache_api.main:app --host 0.0.0.0 --port 8000 --wo
 - Follow existing code style (Black + Ruff)
 - Update documentation for new features
 - All operations must be read-only
+- Use async iterators for streaming (NO CALLBACKS!)
+- Always use WebSocket context managers
 
 ## 📝 License
 
@@ -444,9 +550,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Built on top of the excellent [fullon_cache](https://github.com/ingmarAvocado/fullon_cache) Redis cache library
-- Uses [FastAPI](https://fastapi.tiangolo.com/) for high-performance async API
+- Uses [WebSockets](https://websockets.readthedocs.io/) for real-time async communication
 - Follows LRRS architectural principles for maximum reusability
-- Optimized for [Redis](https://redis.io/) cache performance
+- Optimized for [Redis](https://redis.io/) cache performance with real-time streaming
 
 ## 📞 Support
 
@@ -457,4 +563,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ using LRRS principles for maximum reusability and cache performance** ⚡🚀
+**Built with ❤️ using LRRS principles and WebSocket transport for real-time cache performance with async iterators (NO CALLBACKS!)** ⚡🚀📡

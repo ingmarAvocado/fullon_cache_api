@@ -4,205 +4,284 @@
 
 ## 🎯 Project Mission
 
-**LRRS-Compliant Library**: Create a composable FastAPI gateway that exposes **READ-ONLY** fullon_cache operations as secure REST endpoints, designed for integration into a master_api alongside other fullon libraries with perfect namespace separation.
+**LRRS-Compliant Library**: Create a composable WebSocket-based library that exposes **READ-ONLY** fullon_cache operations via real-time WebSocket transport with async iterator patterns, designed for building WebSocket servers and clients with clean resource management.
 
 ## 🏗️ LRRS Architecture Principles
 
 **This project MUST follow LRRS principles:**
 
-- **Little**: Single purpose - READ-ONLY cache data API gateway only
-- **Responsible**: One clear job - secure REST API for read-only cache operations
-- **Reusable**: Works with any fullon_cache deployment, composable into master_api
-- **Separate**: Zero coupling beyond fullon_cache + fullon_log
+- **Little**: Single purpose - READ-ONLY cache data WebSocket API only
+- **Responsible**: One clear job - secure WebSocket API for read-only cache operations
+- **Reusable**: Works with any fullon_cache deployment, composable WebSocket server patterns
+- **Separate**: Zero coupling beyond fullon_cache + fullon_log dependencies
 
 ### **Critical Design Decision: Library vs Standalone**
 
 ```python
 # Library usage (PRIMARY use case):
-from fullon_cache_api import FullonCacheGateway, get_all_routers
+from fullon_cache_api import fullon_cache_api, CacheWebSocketServer
 
-# Master API integration with namespace separation:
-app = FastAPI(title="Fullon Master API")
-for router in get_all_routers():
-    app.include_router(router, prefix="/api/v1/cache", tags=["Cache"])
+# WebSocket context manager pattern:
+async with fullon_cache_api() as handler:
+    ticker = await handler.get_ticker("binance", "BTC/USDT")
+    
+    # Real-time streaming with async iterators (NO CALLBACKS!)
+    async for update in handler.stream_tickers("binance", ["BTC/USDT"]):
+        print(f"Live: {update['price']}")
 
-# Standalone usage (TESTING only):
-python -m fullon_cache_api.standalone_server
+# Server startup for testing:
+server = CacheWebSocketServer()
+await server.start()
 ```
 
 ## 📊 Cache Focus Areas
 
 **Core Cache Operations** (using fullon_cache dependency):
 
-### **🔍 READ-ONLY CACHE API**
-**IMPORTANT**: This API **ONLY** exposes read/fetch operations. No updates, inserts, or write operations are in scope.
+### **🔍 READ-ONLY WEBSOCKET CACHE API**
+**IMPORTANT**: This API **ONLY** exposes read/fetch operations via WebSocket transport. No updates, inserts, or write operations are in scope.
 
-### **1. Cache Data Retrieval**
-- Retrieve ticker data from Redis cache - **READ ONLY**
-- Retrieve account/position data from Redis - **READ ONLY**
-- Query order status and queue information
-- Bot coordination status and exchange blocking info
-- Trade queue status and processing metrics
-- OHLCV cached data retrieval
-- Process monitoring and health status
+### **1. WebSocket Cache Data Operations**
+- Real-time ticker data streaming from Redis cache - **READ ONLY**
+- Live account/position data streaming from Redis - **READ ONLY**
+- WebSocket-based order status and queue monitoring
+- Real-time bot coordination status and exchange blocking info
+- Live trade queue status and processing metrics streaming
+- WebSocket OHLCV cached data retrieval and streaming
+- Real-time process monitoring and health status
 
-### **2. fullon_cache Integration Pattern**
+### **2. WebSocket Server Cache Integration Pattern**
 ```python
-# READ-ONLY cache operations:
+# WebSocket server integrates directly with fullon_cache:
 from fullon_cache import TickCache, OrdersCache, BotCache, TradesCache, AccountCache, OHLCVCache
 
-# Ticker data queries (using fullon_orm models)
-from fullon_orm.models import Symbol
-async with TickCache() as cache:
-    symbol = Symbol(symbol="BTC/USDT", cat_ex_id=1, base="BTC", quote="USDT")
-    ticker = await cache.get_ticker(symbol, "binance")  # Symbol object first
-    # Note: get_all_tickers method needs verification from actual API
-
-# Order queue status  
-async with OrdersCache() as cache:
-    queue_size = await cache.get_queue_length("binance")  # Correct method name
-    order_status = await cache.get_order_status("order123")
-
-# Bot coordination status
-async with BotCache() as cache:
-    is_blocked = await cache.is_blocked("binance", "BTC/USDT")  # Returns bot_id or None
-    bot_data = await cache.get_bots()  # Get all bots dict
-
-# Trade data retrieval
-async with TradesCache() as cache:
-    trades = await cache.get_trades("BTC/USDT", "binance")
-
-# Account positions and balances
-async with AccountCache() as cache:
-    positions = await cache.get_positions(1001)  # exchange_id
-    balances = await cache.get_user_balances(1001)
-
-# OHLCV data retrieval  
-async with OHLCVCache() as cache:
-    bars = await cache.get_latest_ohlcv_bars("BTCUSD", "1m", count=100)
+class CacheWebSocketServer:
+    async def handle_ticker_request(self, params):
+        async with TickCache() as cache:
+            ticker = await cache.get_ticker(params['exchange'], params['symbol'])
+            return ticker
+    
+    async def handle_queue_request(self, params):
+        async with OrdersCache() as cache:
+            queue_size = await cache.get_queue_length(params['exchange'])
+            return queue_size
+    
+    async def handle_bot_request(self, params):
+        async with BotCache() as cache:
+            bot_status = await cache.is_blocked(params['exchange'], params['symbol'])
+            return bot_status
+    
+    async def handle_stream_tickers(self, params):
+        async with TickCache() as cache:
+            # Real-time streaming with async iterator
+            async for ticker_update in cache.stream_ticker_updates(params['exchange'], params['symbols']):
+                yield {
+                    "type": "ticker_update",
+                    "exchange": params['exchange'],
+                    "symbol": ticker_update.symbol,
+                    "price": ticker_update.price,
+                    "volume": ticker_update.volume,
+                    "timestamp": ticker_update.timestamp
+                }
 ```
 
-### **3. Read-Only Cache API Endpoints** (with namespace separation)
-- `GET /api/v1/cache/tickers/{exchange}/{symbol}` - Retrieve ticker data
-- `GET /api/v1/cache/tickers/{exchange}` - All tickers for exchange
-- `GET /api/v1/cache/accounts/{user_id}/positions` - Account positions from cache
-- `GET /api/v1/cache/orders/{order_id}/status` - Order status from Redis
-- `GET /api/v1/cache/orders/queue/size` - Order queue metrics
-- `GET /api/v1/cache/bots/{bot_id}/status` - Bot coordination status
-- `GET /api/v1/cache/trades/queue/status` - Trade processing queue info
-- `GET /api/v1/cache/ohlcv/{symbol}/{timeframe}` - Cached OHLCV data
-- `GET /api/v1/cache/processes/status` - Process monitoring data
+### **3. WebSocket Operations** (via WebSocket transport)
+- `get_ticker(exchange, symbol)` - Retrieve ticker data via WebSocket
+- `get_all_tickers(exchange)` - All tickers for exchange via WebSocket
+- `get_positions(user_id)` - Account positions from cache via WebSocket
+- `get_order_status(order_id)` - Order status from Redis via WebSocket
+- `get_queue_length(exchange)` - Order queue metrics via WebSocket
+- `is_blocked(exchange, symbol)` - Bot coordination status via WebSocket
+- `get_trades(symbol, exchange)` - Trade data from cache via WebSocket
+- `get_latest_ohlcv_bars(symbol, timeframe)` - Cached OHLCV data via WebSocket
+- `get_system_health()` - Process monitoring data via WebSocket
+
+### **4. Real-time Streaming Operations** (async iterators - NO CALLBACKS!)
+- `stream_tickers(exchange, symbols)` - Real-time ticker updates
+- `stream_positions(user_id)` - Live position updates
+- `stream_order_queue(exchange)` - Real-time queue updates
+- `stream_bot_status()` - Live bot status updates
+- `stream_trade_updates(exchange)` - Real-time trade stream
+- `stream_ohlcv(symbol, timeframe)` - Live OHLCV updates
+- `stream_process_health()` - Real-time system monitoring
 
 ## 🛠️ Architecture Overview
 
-### **Master API Ecosystem with Namespace Separation**
+### **WebSocket-Based Transport Architecture**
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Fullon Master API                       │
-│                     (Authentication Hub)                       │
+│                    WebSocket Cache Ecosystem                   │
+│                                                                 │
 │  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐   │
+│  │   HTTP APIs     │ │  WebSocket API  │ │   HTTP APIs     │   │
 │  │ fullon_orm_api  │ │fullon_cache_api │ │fullon_ohlcv_api │   │
-│  │   (Database)    │ │     (Redis)     │ │  (Market Data)  │   │
-│  │ /api/v1/orm/*   │ │ /api/v1/cache/* │ │/api/v1/market/* │   │
+│  │   (Database)    │ │  (Real-time)    │ │  (Market Data)  │   │
 │  └─────────────────┘ └─────────────────┘ └─────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
          │                       │                       │
          ▼                       ▼                       ▼
-   fullon_orm              Redis Cache             Market Data APIs
-    Database               Operations              (External APIs)
+   PostgreSQL              Redis Cache              Market APIs
+    Database              WebSocket Server         (External)
 
-# Perfect namespace separation prevents conflicts:
-GET /api/v1/orm/trades/         # Database: Trade records 
-GET /api/v1/cache/trades/queue  # Redis: Trade processing queue ← THIS PROJECT
-GET /api/v1/market/trades/      # Market: Historical trade data
+# Perfect transport separation prevents conflicts:
+HTTP https://api.fullon.com/orm/trades/    # Database: Trade records 
+WS   ws://cache-server:8765/tickers        # Redis: Real-time cache data ← THIS PROJECT
+HTTP https://api.fullon.com/market/trades/ # Market: Historical trade data
 ```
 
 ### **Project Structure**
 ```
 fullon_cache_api/
 ├── src/fullon_cache_api/
-│   ├── __init__.py              # Library exports: FullonCacheGateway, get_all_routers
-│   ├── gateway.py               # Main library class (composable)
-│   ├── standalone_server.py     # Testing server only
-│   ├── main.py                  # Legacy compatibility
-│   ├── dependencies/            # FastAPI dependencies
-│   │   └── cache.py             # Cache session management
-│   ├── routers/                 # Cache endpoints
-│   │   ├── tickers.py           # Ticker cache endpoints
-│   │   ├── accounts.py          # Account cache endpoints
-│   │   ├── orders.py            # Order cache endpoints
-│   │   ├── bots.py             # Bot cache endpoints
-│   │   ├── trades.py           # Trade cache endpoints
-│   │   ├── ohlcv.py            # OHLCV cache endpoints
-│   │   └── processes.py        # Process monitoring endpoints
-│   └── models/                  # Pydantic request/response models
-│       ├── requests.py          # Cache API request models
-│       └── responses.py         # Cache API response models
-├── examples/                    # Working code examples
+│   ├── __init__.py              # Library exports: fullon_cache_api, CacheWebSocketServer
+│   ├── websocket_server.py      # Main WebSocket server for cache operations
+│   ├── websocket_client.py      # WebSocket client library
+│   └── cache_handlers/          # Cache operation handlers
+│       ├── __init__.py
+│       ├── tick_handler.py      # Ticker cache operations
+│       ├── account_handler.py   # Account cache operations
+│       ├── order_handler.py     # Order cache operations
+│       ├── bot_handler.py       # Bot cache operations
+│       ├── trade_handler.py     # Trade cache operations
+│       ├── ohlcv_handler.py     # OHLCV cache operations
+│       └── process_handler.py   # Process monitoring operations
+├── examples/                    # Working WebSocket examples
+│   ├── basic_usage.py           # WebSocket context manager demo
+│   ├── example_tick_cache.py    # Working ticker WebSocket example
+│   ├── example_account_cache.py # Account cache WebSocket operations
+│   ├── example_bot_cache.py     # Bot cache WebSocket operations
+│   ├── example_orders_cache.py  # Orders cache WebSocket operations
+│   ├── example_trades_cache.py  # Trades cache WebSocket operations
+│   ├── example_ohlcv_cache.py   # OHLCV cache WebSocket operations
+│   ├── example_process_cache.py # Process cache WebSocket operations
+│   └── run_all.py               # Run all examples with selection
 ├── tests/                       # Comprehensive test suite
 └── docs/                        # Additional documentation
 ```
 
 ## 🚀 Core Development Patterns
 
-### **1. Read-Only Cache Repository Endpoint Pattern**
+### **1. WebSocket Cache Operation Handler Pattern**
 ```python
-# Standard pattern for all READ-ONLY cache endpoints:
-from fullon_orm.models import Symbol
+# Standard pattern for all READ-ONLY WebSocket cache operations:
+from fullon_cache import TickCache
+import json
 
-@router.get("/{exchange}/{symbol}/ticker", response_model=TickerResponse)
-async def get_ticker(
-    exchange: str,
-    symbol: str
-):
-    # 1. Validate exchange and symbol, create Symbol object
-    symbol_obj = Symbol(symbol=symbol, cat_ex_id=1, base=symbol.split("/")[0], quote=symbol.split("/")[1])
+class TickerHandler:
+    async def handle_get_ticker(self, websocket, message):
+        params = message.get('params', {})
+        exchange = params.get('exchange')
+        symbol = params.get('symbol')
+        
+        # 1. Validate parameters
+        if not exchange or not symbol:
+            await websocket.send(json.dumps({
+                "request_id": message.get('request_id'),
+                "success": False,
+                "error": "Missing exchange or symbol parameter"
+            }))
+            return
+        
+        # 2. READ-ONLY cache operation
+        async with TickCache() as cache:
+            ticker = await cache.get_ticker(exchange, symbol)
+        
+        # 3. Send WebSocket response
+        response = {
+            "request_id": message.get('request_id'),
+            "success": True,
+            "result": {
+                "symbol": symbol,
+                "exchange": exchange,
+                "price": ticker.price if ticker else None,
+                "volume": ticker.volume if ticker else None,
+                "timestamp": ticker.timestamp if ticker else None
+            } if ticker else None
+        }
+        await websocket.send(json.dumps(response))
     
-    # 2. READ-ONLY cache operation using fullon_orm models
-    async with TickCache() as cache:
-        ticker = await cache.get_ticker(symbol_obj, exchange)
-        if not ticker:
-            raise HTTPException(status_code=404, detail=f"Ticker {symbol} not found in {exchange} cache")
-    
-    # 3. Return formatted response (no modifications to cache)
-    return TickerResponse(
-        exchange=exchange,
-        symbol=symbol,
-        ticker=ticker,
-        cached_at=ticker.timestamp if hasattr(ticker, 'timestamp') else None,
-        cache_hit=True
-    )
+    async def handle_stream_tickers(self, websocket, message):
+        params = message.get('params', {})
+        exchange = params.get('exchange')
+        symbols = params.get('symbols', [])
+        
+        # Real-time streaming with async iterator (NO CALLBACKS!)
+        async with TickCache() as cache:
+            async for update in cache.stream_ticker_updates(exchange, symbols):
+                stream_message = {
+                    "type": "ticker_update",
+                    "exchange": exchange,
+                    "symbol": update.symbol,
+                    "price": update.price,
+                    "volume": update.volume,
+                    "timestamp": update.timestamp,
+                    "update_id": update.id
+                }
+                await websocket.send(json.dumps(stream_message))
 ```
 
-### **2. Cache Connection Management**
+### **2. WebSocket Connection Management**
 ```python
-# Cache session patterns:
-from fullon_cache import TickCache, OrdersCache, BotCache
+# WebSocket client context manager:
+from fullon_cache_api import fullon_cache_api
+
+class WebSocketCacheClient:
+    async def __aenter__(self):
+        """Connect to WebSocket server."""
+        self.websocket = await websockets.connect(self.ws_url)
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Disconnect from WebSocket server."""
+        await self.websocket.close()
 
 # Health check pattern
-async def check_cache_health():
-    async with TickCache() as cache:
-        return await cache.test()  # Redis connection test
+async def check_websocket_health():
+    async with fullon_cache_api() as client:
+        response = await client.ping()
+        return response.get('status') == 'ok'
 
-# Multiple cache operations (corrected method calls)
-async def get_trading_status(user_id: str):
-    async with OrdersCache() as orders_cache, BotCache() as bot_cache:
-        # Note: user-specific methods need verification from actual fullon_cache API
-        # Using exchange-based operations as documented in fullon_cache
-        queue_size = await orders_cache.get_queue_length("binance")  # exchange-based
-        bots_data = await bot_cache.get_bots()  # returns all bots dict
-        return {"queue_size": queue_size, "bots": bots_data}
+# Multiple cache operations via WebSocket
+async def get_trading_status_via_websocket(exchange: str):
+    async with fullon_cache_api() as client:
+        # Get data via WebSocket operations
+        queue_size = await client.get_queue_length(exchange)
+        bots_data = await client.get_bots()
+        blocked_status = await client.is_blocked(exchange, "BTC/USDT")
+        
+        return {
+            "queue_size": queue_size, 
+            "bots": bots_data,
+            "blocked": blocked_status
+        }
 ```
 
-### **3. Error Handling Pattern**
+### **3. WebSocket Error Handling Pattern**
 ```python
-from fastapi import HTTPException
+import json
 
-# Cache-specific HTTP errors:
-raise HTTPException(status_code=404, detail="Data not found in cache")
-raise HTTPException(status_code=503, detail="Cache service unavailable")
-raise HTTPException(status_code=422, detail="Invalid cache key format")
-raise HTTPException(status_code=408, detail="Cache operation timeout")
+# WebSocket-specific error responses:
+async def send_error_response(websocket, request_id, error_code, message):
+    error_response = {
+        "request_id": request_id,
+        "success": False,
+        "error_code": error_code,
+        "error": message
+    }
+    await websocket.send(json.dumps(error_response))
+
+# Common WebSocket error patterns:
+# Data not found in cache
+await send_error_response(websocket, request_id, "CACHE_MISS", "Data not found in cache")
+
+# Cache service unavailable
+await send_error_response(websocket, request_id, "CACHE_UNAVAILABLE", "Cache service unavailable")
+
+# Invalid parameters
+await send_error_response(websocket, request_id, "INVALID_PARAMS", "Invalid cache operation parameters")
+
+# Connection timeout
+await send_error_response(websocket, request_id, "TIMEOUT", "Cache operation timeout")
 ```
 
 ### **4. Logging Pattern (fullon_log)**
@@ -294,76 +373,70 @@ LOG_ROTATION=100 MB          # Optional: file rotation
 LOG_RETENTION=7 days         # Optional: retention period
 ```
 
-## 📋 Cache Endpoint Coverage Requirements
+## 📋 WebSocket Cache Operation Coverage Requirements
 
-**Every READ-ONLY fullon_cache operation MUST have an API endpoint:**
+**Every READ-ONLY fullon_cache operation MUST have a WebSocket handler:**
 
-### **TickCache Endpoints (READ-ONLY)** - `/api/v1/cache/tickers/`
-- Ticker data retrieval by exchange/symbol
-- All tickers for an exchange
-- Ticker subscription status
-- Price data with timestamp information
+### **TickCache Operations (READ-ONLY)** - Ticker Handler
+- `get_ticker(exchange, symbol)` - Ticker data retrieval via WebSocket
+- `get_all_tickers(exchange)` - All tickers for exchange via WebSocket
+- `stream_tickers(exchange, symbols)` - Real-time ticker updates
+- `ping()` - Connection health check
 
-### **AccountCache Endpoints (READ-ONLY)** - `/api/v1/cache/accounts/`
-- Account position data retrieval
-- User balance information from cache
-- Account status and metadata
-- Portfolio summaries from cached data
+### **AccountCache Operations (READ-ONLY)** - Account Handler  
+- `get_balance(user_id, exchange)` - Account balance data via WebSocket
+- `get_positions(user_id)` - User account positions via WebSocket
+- `stream_positions(user_id)` - Real-time position updates
 
-### **OrdersCache Endpoints (READ-ONLY)** - `/api/v1/cache/orders/`
-- Order status queries from Redis
-- Order queue size and metrics
-- Queue processing status
-- Order history from cache
+### **OrdersCache Operations (READ-ONLY)** - Order Handler
+- `get_order_status(order_id)` - Order status from cache via WebSocket
+- `get_queue_length(exchange)` - Order queue metrics via WebSocket
+- `stream_order_queue(exchange)` - Real-time queue updates
 
-### **BotCache Endpoints (READ-ONLY)** - `/api/v1/cache/bots/`
-- Bot coordination status
-- Exchange blocking status
-- Bot activity monitoring
-- Multi-bot coordination info
+### **BotCache Operations (READ-ONLY)** - Bot Handler
+- `get_bot_status(bot_id)` - Bot coordination status via WebSocket
+- `is_blocked(exchange, symbol)` - Exchange blocking status via WebSocket
+- `get_bots()` - All bot statuses via WebSocket
+- `stream_bot_status()` - Real-time bot updates
 
-### **TradesCache Endpoints (READ-ONLY)** - `/api/v1/cache/trades/`
-- Trade processing queue status
-- Trade data from cache
-- Trade statistics and metrics
-- Queue performance monitoring
+### **TradesCache Operations (READ-ONLY)** - Trade Handler
+- `get_trades(symbol, exchange)` - Trade data from cache via WebSocket
+- `get_trade_status(trade_key)` - Trade processing status via WebSocket
+- `stream_trade_updates(exchange)` - Real-time trade stream
 
-### **OHLCVCache Endpoints (READ-ONLY)** - `/api/v1/cache/ohlcv/`
-- Cached OHLCV data retrieval
-- Timeframe-specific cache queries
-- OHLCV data freshness status
-- Cache performance metrics
+### **OHLCVCache Operations (READ-ONLY)** - OHLCV Handler
+- `get_latest_ohlcv_bars(symbol, timeframe)` - Cached OHLCV data via WebSocket
+- `stream_ohlcv(symbol, timeframe)` - Real-time OHLCV updates
 
-### **ProcessCache Endpoints (READ-ONLY)** - `/api/v1/cache/processes/`
-- System process monitoring
-- Process health status
-- Process performance metrics
-- System-wide cache status
+### **ProcessCache Operations (READ-ONLY)** - Process Handler
+- `get_system_health()` - System health status via WebSocket
+- `get_active_processes()` - Active process data via WebSocket
+- `stream_process_health()` - Real-time system monitoring
 
 ## 🧪 Testing Strategy
 
 ### **Test Categories**
 ```bash
 # Unit tests - Individual components
-tests/test_gateways.py
-tests/test_cache_operations.py  
-tests/test_models.py
+tests/test_websocket_server.py
+tests/test_websocket_client.py
+tests/test_cache_handlers.py
 
 # Integration tests - End-to-end workflows
-tests/integration/test_cache_lifecycle.py
-tests/integration/test_redis_operations.py
+tests/integration/test_websocket_workflows.py
+tests/integration/test_cache_integration.py
 
-# Performance tests - Cache performance testing
-tests/performance/test_endpoints.py
+# Performance tests - WebSocket performance testing
+tests/performance/test_websocket_performance.py
 ```
 
 ### **Required Test Coverage**
-- **Cache Operations**: Data retrieval, Redis connections, cache misses
-- **Redis Integration**: All cache operations, connection handling
-- **Data Validation**: Cache model validation, exchange/symbol validation
-- **Integration**: Complete cache workflows, multi-cache operations
-- **Performance**: Response times, large dataset handling, concurrent requests
-- **Namespace**: Verify all endpoints use /api/v1/cache/ prefixes correctly
+- **WebSocket Operations**: Connection management, message handling, real-time streaming
+- **Cache Integration**: All fullon_cache operations via WebSocket, connection handling
+- **Message Validation**: WebSocket message format validation, parameter validation
+- **Integration**: Complete WebSocket cache workflows, multi-cache operations
+- **Performance**: WebSocket response times, large dataset streaming, concurrent connections
+- **Async Iterators**: Verify all streaming operations use async iterators (NO CALLBACKS!)
 
 ## 🚀 Quick Start Commands
 
@@ -381,9 +454,10 @@ make check      # Full quality check
 make format     # Format code with Black + Ruff
 make lint       # Check code quality
 
-# Cache API Exploration
-open http://localhost:8000/docs    # Swagger UI
-open http://localhost:8000/redoc   # ReDoc interface
+# WebSocket API Testing
+python examples/basic_usage.py           # Basic WebSocket demo
+python examples/example_tick_cache.py    # Ticker WebSocket example
+python examples/run_all.py              # All WebSocket examples
 ```
 
 ## 📖 Key References
@@ -406,88 +480,135 @@ open http://localhost:8000/redoc   # ReDoc interface
 
 1. **LRRS Compliance**: Never violate Little, Responsible, Reusable, Separate
 2. **TDD Only**: Tests first, implementation second, `./run_test.py` must pass
-3. **Library First**: Design for master_api composition, standalone is secondary
+3. **WebSocket First**: Real-time cache operations via WebSocket transport
 4. **Read-Only**: No write/update/insert operations in scope
-5. **Namespace Separation**: Always use /api/v1/cache/ prefix
-6. **Async Only**: Every operation must be asynchronous
+5. **Async Iterators**: Streaming data with NO CALLBACKS pattern
+6. **Context Managers**: Clean resource management with `async with` patterns
 
 ## 🔄 Cache-Specific Best Practices
 
-### **1. Always Use Context Managers**
+### **1. Always Use WebSocket Context Managers**
 ```python
-# Correct:
-async with TickCache() as cache:
-    data = await cache.get_ticker("binance", "BTC/USDT")
+# Correct - WebSocket context manager:
+async with fullon_cache_api() as handler:
+    ticker = await handler.get_ticker("binance", "BTC/USDT")
+    
+    # Real-time streaming with async iterators
+    async for update in handler.stream_tickers("binance", ["BTC/USDT"]):
+        print(f"Live: {update['price']}")
 
 # Wrong:
-cache = TickCache()
-data = await cache.get_ticker("binance", "BTC/USDT")  # No cleanup
+handler = fullon_cache_api()
+data = await handler.get_ticker("binance", "BTC/USDT")  # No connection management
 ```
 
-### **2. Handle Cache Misses Gracefully**
+### **2. Handle WebSocket Cache Misses Gracefully**
 ```python
-# Provide meaningful responses for cache misses:
-async def get_cached_ticker(exchange: str, symbol: str):
-    from fullon_orm.models import Symbol
+# Provide meaningful WebSocket responses for cache misses:
+async def handle_ticker_request(websocket, message):
+    params = message.get('params', {})
+    exchange = params.get('exchange')
+    symbol = params.get('symbol')
     
-    # Create Symbol object for fullon_cache API
-    symbol_obj = Symbol(
-        symbol=symbol, 
-        cat_ex_id=1,  # Exchange category ID
-        base=symbol.split("/")[0], 
-        quote=symbol.split("/")[1]
-    )
-    
-    async with TickCache() as cache:
-        ticker = await cache.get_ticker(symbol_obj, exchange)
+    async with fullon_cache_api() as handler:
+        ticker = await handler.get_ticker(exchange, symbol)
+        
         if not ticker:
-            raise HTTPException(
-                status_code=404, 
-                detail=f"Ticker {symbol} not found in {exchange} cache"
-            )
-        return ticker
+            # Send WebSocket error response
+            error_response = {
+                "request_id": message.get('request_id'),
+                "success": False,
+                "error_code": "CACHE_MISS",
+                "error": f"Ticker {symbol} not found in {exchange} cache"
+            }
+            await websocket.send(json.dumps(error_response))
+            return
+        
+        # Send successful response
+        success_response = {
+            "request_id": message.get('request_id'),
+            "success": True,
+            "result": ticker
+        }
+        await websocket.send(json.dumps(success_response))
 ```
 
-### **3. Redis Connection Health Monitoring**
+### **3. WebSocket Connection Health Monitoring**
 ```python
-# Include health check endpoints:
-@router.get("/health")
-async def cache_health():
+# Include WebSocket health check operations:
+async def handle_ping_request(websocket, message):
     try:
-        async with TickCache() as cache:  # Use actual cache class
-            await cache.test()
-        return {"status": "healthy", "redis": "connected"}
+        async with fullon_cache_api() as handler:
+            # Test underlying cache connection
+            health_status = await handler.ping()
+        
+        response = {
+            "request_id": message.get('request_id'),
+            "success": True,
+            "result": {
+                "status": "healthy", 
+                "websocket": "connected",
+                "cache": "available",
+                "timestamp": time.time()
+            }
+        }
+        await websocket.send(json.dumps(response))
     except Exception as e:
-        raise HTTPException(status_code=503, detail="Cache unavailable")
+        error_response = {
+            "request_id": message.get('request_id'),
+            "success": False,
+            "error_code": "HEALTH_CHECK_FAILED",
+            "error": "Cache unavailable"
+        }
+        await websocket.send(json.dumps(error_response))
 ```
 
-### **4. Performance Monitoring**
+### **4. WebSocket Performance Monitoring**
 ```python
-# Log cache performance:
+# Log WebSocket cache performance:
 import time
 
-async def get_ticker_with_metrics(exchange: str, symbol: str):
-    from fullon_orm.models import Symbol
-    
+async def handle_ticker_request_with_metrics(websocket, message):
     start_time = time.time()
+    params = message.get('params', {})
+    exchange = params.get('exchange')
+    symbol = params.get('symbol')
     
-    # Create Symbol object for fullon_cache
-    symbol_obj = Symbol(
-        symbol=symbol, 
-        cat_ex_id=1, 
-        base=symbol.split("/")[0], 
-        quote=symbol.split("/")[1]
-    )
-    
-    async with TickCache() as cache:
-        result = await cache.get_ticker(symbol_obj, exchange)
-    
-    duration = (time.time() - start_time) * 1000
-    logger.info("Cache operation completed",
-               operation="get_ticker",
-               duration_ms=duration,
-               cache_hit=result is not None)
-    return result
+    try:
+        async with fullon_cache_api() as handler:
+            result = await handler.get_ticker(exchange, symbol)
+        
+        duration_ms = (time.time() - start_time) * 1000
+        
+        logger.info("WebSocket cache operation completed",
+                   operation="get_ticker",
+                   exchange=exchange,
+                   symbol=symbol,
+                   duration_ms=duration_ms,
+                   cache_hit=result is not None,
+                   transport="websocket")
+        
+        # Send response with performance metrics
+        response = {
+            "request_id": message.get('request_id'),
+            "success": True,
+            "result": result,
+            "metrics": {
+                "duration_ms": duration_ms,
+                "cache_hit": result is not None
+            }
+        }
+        await websocket.send(json.dumps(response))
+        
+    except Exception as e:
+        duration_ms = (time.time() - start_time) * 1000
+        logger.error("WebSocket cache operation failed",
+                    operation="get_ticker",
+                    exchange=exchange,
+                    symbol=symbol,
+                    duration_ms=duration_ms,
+                    error=str(e))
+        raise
 ```
 
 ## 📊 Fullon Log Integration Best Practices
@@ -661,4 +782,4 @@ async def health_check():
 
 ---
 
-**Remember**: This is a composable library that will integrate with 3-4 other similar libraries in a master_api. Design every decision with composition, namespace separation, and reusability in mind! 🚀
+**Remember**: This is a WebSocket-based library that provides real-time cache operations with async iterator patterns. Design every decision with WebSocket transport, real-time streaming, and clean resource management in mind! NO CALLBACKS - use async iterators for all streaming operations! 🚀
