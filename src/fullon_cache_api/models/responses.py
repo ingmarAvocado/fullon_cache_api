@@ -54,6 +54,7 @@ class TickerResponse(BaseResponse):
     )
     cached_at: datetime = Field(..., description="When data was cached")
     cache_hit: bool = Field(..., description="Whether data was found in cache")
+    stale: bool = Field(default=False, description="Whether the cached data is stale")
 
 
 class AllTickersResponse(BaseResponse):
