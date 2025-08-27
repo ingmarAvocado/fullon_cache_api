@@ -68,8 +68,72 @@ class AllTickersResponse(BaseResponse):
     cached_at: datetime = Field(..., description="When data was cached")
 
 
+class Position(BaseModel):
+    """Position data model."""
+    
+    symbol: str = Field(..., description="Trading symbol", example="BTC/USDT")
+    exchange: str = Field(..., description="Exchange name", example="binance")
+    side: str = Field(..., description="Position side", example="long")
+    size: float = Field(..., description="Position size", example=0.5)
+    entry_price: float = Field(..., description="Entry price", example=45000.0)
+    current_price: float = Field(..., description="Current price", example=45500.0)
+    unrealized_pnl: float = Field(..., description="Unrealized P&L", example=250.0)
+    margin_used: float = Field(..., description="Margin used", example=2250.0)
+
+
+class Balance(BaseModel):
+    """Balance data model."""
+    
+    currency: str = Field(..., description="Currency code", example="USDT")
+    available: float = Field(..., description="Available balance", example=10000.0)
+    used: float = Field(..., description="Used balance", example=2250.0)
+    total: float = Field(..., description="Total balance", example=12250.0)
+
+
+class AccountPositionsResponse(BaseResponse):
+    """Account positions response model."""
+
+    user_id: str = Field(..., description="User identifier", example="user123")
+    positions: list[Position] = Field(..., description="List of user positions")
+    total_positions: int = Field(..., description="Total number of positions")
+    cached_at: datetime = Field(..., description="When data was cached")
+
+
+class AccountBalancesResponse(BaseResponse):
+    """Account balances response model."""
+
+    user_id: str = Field(..., description="User identifier", example="user123")
+    balances: list[Balance] = Field(..., description="List of currency balances")
+    total_balance_usd: float = Field(..., description="Total balance in USD", example=35500.0)
+    cached_at: datetime = Field(..., description="When data was cached")
+
+
+class AccountStatusResponse(BaseResponse):
+    """Account status response model."""
+
+    user_id: str = Field(..., description="User identifier", example="user123")
+    status: str = Field(..., description="Account status", example="active")
+    last_activity: datetime | None = Field(None, description="Last account activity")
+    total_positions: int = Field(..., description="Total number of positions")
+    total_balance_usd: float = Field(..., description="Total balance in USD")
+    margin_level: float | None = Field(None, description="Margin level percentage")
+    cached_at: datetime = Field(..., description="When data was cached")
+
+
+class AccountSummaryResponse(BaseResponse):
+    """Account summary response model."""
+
+    total_users: int = Field(..., description="Total number of users", example=150)
+    active_users: int = Field(..., description="Number of active users", example=120)
+    total_positions: int = Field(..., description="Total positions across all users", example=450)
+    total_balance_usd: float = Field(..., description="Total balance across all users", example=2500000.0)
+    cache_health: str = Field(..., description="Cache health status", example="healthy")
+    last_updated: datetime = Field(..., description="Last update timestamp")
+
+
+# Legacy models for backward compatibility
 class AccountBalanceResponse(BaseResponse):
-    """Account balance response model."""
+    """Account balance response model (legacy)."""
 
     user_id: int = Field(..., description="User identifier")
     exchange: str = Field(..., description="Exchange name")
@@ -78,7 +142,7 @@ class AccountBalanceResponse(BaseResponse):
 
 
 class PositionsResponse(BaseResponse):
-    """Account positions response model."""
+    """Account positions response model (legacy)."""
 
     user_id: int = Field(..., description="User identifier")
     exchange: str | None = Field(None, description="Exchange filter if applied")

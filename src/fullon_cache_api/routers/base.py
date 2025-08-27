@@ -21,6 +21,74 @@ from .exceptions import InvalidParameterError
 logger = get_component_logger("fullon.api.cache.router")
 
 
+def validate_user_id(user_id: str) -> str:
+    """
+    Validate user ID parameter format and sanitization.
+
+    Args:
+        user_id: User identifier string
+
+    Returns:
+        Sanitized user ID if valid
+
+    Raises:
+        InvalidParameterError: If user ID is invalid
+    """
+    if not user_id or not user_id.strip():
+        raise InvalidParameterError("User ID cannot be empty")
+
+    # Sanitize whitespace
+    user_id = user_id.strip()
+
+    # Check for minimum/maximum length
+    if len(user_id) < 1 or len(user_id) > 100:
+        raise InvalidParameterError("User ID must be between 1 and 100 characters")
+
+    # Check for malicious patterns
+    dangerous_patterns = [
+        ";",
+        "--",
+        "/*",
+        "*/",
+        "drop",
+        "delete",
+        "insert",
+        "update",
+        "select",
+        "<script",
+        "</script",
+        "javascript:",
+        "data:",
+        "vbscript:",
+        "onload=",
+        "onerror=",
+        "\x00",
+        "\r",
+        "\n",
+        "../",
+        "./",
+        "\\",
+        "'",
+        '"',
+    ]
+
+    user_id_lower = user_id.lower()
+    for pattern in dangerous_patterns:
+        if pattern in user_id_lower:
+            raise InvalidParameterError(
+                f"User ID contains invalid characters or patterns"
+            )
+
+    # Alphanumeric plus some safe characters only
+    allowed_chars = set(
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-@."
+    )
+    if not all(c in allowed_chars for c in user_id):
+        raise InvalidParameterError("User ID contains invalid characters")
+
+    return user_id
+
+
 def validate_exchange_symbol_format(exchange: str, symbol: str) -> tuple[str, str]:
     """
     Validate exchange and symbol parameter format.

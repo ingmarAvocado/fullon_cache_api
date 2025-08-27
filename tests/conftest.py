@@ -39,9 +39,32 @@ def app():
 
 
 @pytest.fixture
+def app_with_accounts():
+    """Create FastAPI app with accounts router for testing."""
+    from fullon_cache_api.routers.accounts import router as accounts_router
+
+    app = FastAPI(
+        title="fullon_cache_api Test with Accounts",
+        description="Test application for fullon_cache_api with accounts router",
+        version="0.1.0",
+    )
+
+    # Include accounts router for testing
+    app.include_router(accounts_router, prefix="/api/v1/cache")
+
+    return app
+
+
+@pytest.fixture
 def client(app):
     """Create a test client for the FastAPI application."""
     return TestClient(app)
+
+
+@pytest.fixture
+def accounts_client(app_with_accounts):
+    """Create test client with accounts router."""
+    return TestClient(app_with_accounts)
 
 
 @pytest.fixture
@@ -93,3 +116,36 @@ def mock_tick_data():
         ask=50001.0,
         last=50000.0,
     )
+
+
+@pytest.fixture
+def mock_account_cache():
+    """Mock AccountCache for testing."""
+    mock_cache = AsyncMock()
+    mock_cache.ping.return_value = "pong"
+    mock_cache.test.return_value = True
+    return mock_cache
+
+
+@pytest.fixture
+def mock_position_data():
+    """Mock position data for testing."""
+    return {
+        "symbol": "BTC/USDT",
+        "exchange": "binance",
+        "side": "long",
+        "size": 0.5,
+        "entry_price": 45000.0,
+        "current_price": 45500.0,
+        "unrealized_pnl": 250.0,
+        "margin_used": 2250.0,
+    }
+
+
+@pytest.fixture
+def mock_balance_data():
+    """Mock balance data for testing."""
+    return [
+        {"currency": "USDT", "available": 10000.0, "used": 2250.0, "total": 12250.0},
+        {"currency": "BTC", "available": 0.0, "used": 0.5, "total": 0.5},
+    ]
