@@ -380,6 +380,7 @@ class TestImports:
                 "base",
                 "types",
                 "exceptions",
+                "models",
             ]:  # Skip internal modules and special attributes
                 assert attr in fullon_cache_api.__all__, f"'{attr}' not in __all__"
 

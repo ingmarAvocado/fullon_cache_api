@@ -22,11 +22,11 @@ LOGGING: fullon_log Integration
 
 __version__ = "0.1.0"
 
+# Pydantic models for FastAPI WebSocket operations
 # FastAPI WebSocket infrastructure (will be implemented in Issue #4)
 # from .app import create_fastapi_app
 # from .websocket import CacheWebSocketRouter
 # from .client import fullon_cache_api
-
 # Base infrastructure
 from .base import (
     BaseFastAPIWebSocketHandler,
@@ -39,6 +39,25 @@ from .exceptions import (
     CacheServiceUnavailableError,
     CacheTimeoutError,
     FastAPIWebSocketConnectionError,
+)
+from .models import (
+    ALLOWED_OPERATIONS,
+    BalanceData,
+    BotData,
+    CacheRequest,
+    CacheResponse,
+    ErrorCodes,
+    ErrorMessage,
+    HealthData,
+    OHLCVData,
+    OrderData,
+    PositionData,
+    ProcessData,
+    StreamMessage,
+    TickerData,
+    TradeData,
+    create_error_response,
+    create_success_response,
 )
 from .types import (
     CacheData,
@@ -59,6 +78,24 @@ __all__ = [
     # "create_fastapi_app",
     # "fullon_cache_api",
     # "CacheWebSocketRouter",
+    # Pydantic Models
+    "CacheRequest",
+    "CacheResponse",
+    "StreamMessage",
+    "ErrorMessage",
+    "ErrorCodes",
+    "ALLOWED_OPERATIONS",
+    "create_error_response",
+    "create_success_response",
+    "TickerData",
+    "PositionData",
+    "BalanceData",
+    "OrderData",
+    "TradeData",
+    "OHLCVData",
+    "ProcessData",
+    "BotData",
+    "HealthData",
     # Infrastructure Foundation
     "BaseFastAPIWebSocketHandler",
     "BaseFastAPIWebSocketStream",
