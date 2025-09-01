@@ -4,10 +4,8 @@ import json
 import uuid
 
 import pytest
-from starlette.testclient import TestClient
-
 from fullon_cache_api.main import create_app
-
+from starlette.testclient import TestClient
 
 pytestmark = [pytest.mark.redis]
 
@@ -45,21 +43,22 @@ def test_get_all_tickers_real_redis():
     import asyncio
 
     async def _seed():
+        from fullon_orm.models import Tick  # type: ignore
+
         cache = TickCache()
         try:
             for i, s in enumerate(symbols):
-                tick = {
-                    "symbol": s,
-                    "exchange": exchange,
-                    "price": 50000.0 - (i * 1000),
-                    "volume": 1000 + (i * 10),
-                    "time": 1700000000.0 + i,
-                    "bid": 10.0,
-                    "ask": 20.0,
-                    "last": 1.0,
-                    "change_24h": 2.5,
-                }
-                await cache.set_ticker(tick)  # type: ignore[arg-type]
+                tick = Tick(
+                    symbol=s,
+                    exchange=exchange,
+                    price=50000.0 - (i * 1000),
+                    volume=1000 + (i * 10),
+                    time=1700000000.0 + i,
+                    bid=10.0,
+                    ask=20.0,
+                    last=1.0,
+                )
+                await cache.set_ticker(tick)
         finally:
             await cache._cache.close()
 
@@ -78,4 +77,3 @@ def test_get_all_tickers_real_redis():
         assert response["result"]["exchange"] == exchange
         assert isinstance(response["result"]["tickers"], list)
         assert len(response["result"]["tickers"]) >= 2
-

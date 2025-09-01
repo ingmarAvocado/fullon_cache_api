@@ -4,10 +4,9 @@ from datetime import UTC, datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from redis.exceptions import RedisError
-
 from fullon_cache import BaseCache
 from fullon_cache.exceptions import CacheError, ConnectionError, SerializationError
+from redis.exceptions import RedisError
 
 
 class TestBaseCacheCoverage:
@@ -20,7 +19,7 @@ class TestBaseCacheCoverage:
 
         # Add some pubsub clients
         mock_client = AsyncMock()
-        cache._pubsub_clients['test'] = mock_client
+        cache._pubsub_clients["test"] = mock_client
 
         # Close the cache
         await cache.close()
@@ -41,7 +40,7 @@ class TestBaseCacheCoverage:
         # Add a pubsub client that raises on close
         mock_client = AsyncMock()
         mock_client.aclose.side_effect = Exception("Close failed")
-        cache._pubsub_clients['test'] = mock_client
+        cache._pubsub_clients["test"] = mock_client
 
         # Should not raise
         await cache.close()
@@ -52,7 +51,7 @@ class TestBaseCacheCoverage:
         """Test set method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.set', side_effect=RedisError("Set failed")):
+        with patch("redis.asyncio.Redis.set", side_effect=RedisError("Set failed")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.set("key", "value")
             assert "Failed to set key" in str(exc_info.value)
@@ -62,7 +61,9 @@ class TestBaseCacheCoverage:
         """Test delete method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.delete', side_effect=RedisError("Delete failed")):
+        with patch(
+            "redis.asyncio.Redis.delete", side_effect=RedisError("Delete failed")
+        ):
             with pytest.raises(CacheError) as exc_info:
                 await cache.delete("key1", "key2")
             assert "Failed to delete keys" in str(exc_info.value)
@@ -72,7 +73,9 @@ class TestBaseCacheCoverage:
         """Test exists method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.exists', side_effect=RedisError("Exists failed")):
+        with patch(
+            "redis.asyncio.Redis.exists", side_effect=RedisError("Exists failed")
+        ):
             with pytest.raises(CacheError) as exc_info:
                 await cache.exists("key")
             assert "Failed to check key existence" in str(exc_info.value)
@@ -82,7 +85,9 @@ class TestBaseCacheCoverage:
         """Test expire method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.expire', side_effect=RedisError("Expire failed")):
+        with patch(
+            "redis.asyncio.Redis.expire", side_effect=RedisError("Expire failed")
+        ):
             with pytest.raises(CacheError) as exc_info:
                 await cache.expire("key", 60)
             assert "Failed to set expiration" in str(exc_info.value)
@@ -92,7 +97,7 @@ class TestBaseCacheCoverage:
         """Test scan_keys method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.scan', side_effect=RedisError("Scan failed")):
+        with patch("redis.asyncio.Redis.scan", side_effect=RedisError("Scan failed")):
             with pytest.raises(CacheError) as exc_info:
                 async for _ in cache.scan_keys("pattern*"):
                     pass
@@ -103,7 +108,7 @@ class TestBaseCacheCoverage:
         """Test hset method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.hset', side_effect=RedisError("Hset failed")):
+        with patch("redis.asyncio.Redis.hset", side_effect=RedisError("Hset failed")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.hset("hash", "field", "value")
             assert "Failed to set hash field" in str(exc_info.value)
@@ -113,7 +118,7 @@ class TestBaseCacheCoverage:
         """Test hget method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.hget', side_effect=RedisError("Hget failed")):
+        with patch("redis.asyncio.Redis.hget", side_effect=RedisError("Hget failed")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.hget("hash", "field")
             assert "Failed to get hash field" in str(exc_info.value)
@@ -123,7 +128,9 @@ class TestBaseCacheCoverage:
         """Test hgetall method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.hgetall', side_effect=RedisError("Hgetall failed")):
+        with patch(
+            "redis.asyncio.Redis.hgetall", side_effect=RedisError("Hgetall failed")
+        ):
             with pytest.raises(CacheError) as exc_info:
                 await cache.hgetall("hash")
             assert "Failed to get hash" in str(exc_info.value)
@@ -133,7 +140,7 @@ class TestBaseCacheCoverage:
         """Test hdel method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.hdel', side_effect=RedisError("Hdel failed")):
+        with patch("redis.asyncio.Redis.hdel", side_effect=RedisError("Hdel failed")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.hdel("hash", "field1", "field2")
             assert "Failed to delete hash fields" in str(exc_info.value)
@@ -143,7 +150,7 @@ class TestBaseCacheCoverage:
         """Test rpush method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.rpush', side_effect=RedisError("Rpush failed")):
+        with patch("redis.asyncio.Redis.rpush", side_effect=RedisError("Rpush failed")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.rpush("list", "value1", "value2")
             assert "Failed to push to list" in str(exc_info.value)
@@ -153,7 +160,7 @@ class TestBaseCacheCoverage:
         """Test lpop method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.lpop', side_effect=RedisError("Lpop failed")):
+        with patch("redis.asyncio.Redis.lpop", side_effect=RedisError("Lpop failed")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.lpop("list")
             assert "Failed to pop from list" in str(exc_info.value)
@@ -163,7 +170,9 @@ class TestBaseCacheCoverage:
         """Test lrange method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.lrange', side_effect=RedisError("Lrange failed")):
+        with patch(
+            "redis.asyncio.Redis.lrange", side_effect=RedisError("Lrange failed")
+        ):
             with pytest.raises(CacheError) as exc_info:
                 await cache.lrange("list", 0, -1)
             assert "Failed to get list range" in str(exc_info.value)
@@ -173,7 +182,7 @@ class TestBaseCacheCoverage:
         """Test blpop method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.blpop', side_effect=RedisError("Blpop failed")):
+        with patch("redis.asyncio.Redis.blpop", side_effect=RedisError("Blpop failed")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.blpop(["list"], timeout=1)
             assert "Failed to blocking pop" in str(exc_info.value)
@@ -183,7 +192,7 @@ class TestBaseCacheCoverage:
         """Test ltrim method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.ltrim', side_effect=RedisError("Ltrim failed")):
+        with patch("redis.asyncio.Redis.ltrim", side_effect=RedisError("Ltrim failed")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.ltrim("list", 0, 10)
             assert "Failed to trim list" in str(exc_info.value)
@@ -202,7 +211,7 @@ class TestBaseCacheCoverage:
         cache = BaseCache()
 
         # Mock get to return invalid JSON
-        with patch.object(cache, 'get', return_value='invalid json'):
+        with patch.object(cache, "get", return_value="invalid json"):
             with pytest.raises(SerializationError) as exc_info:
                 await cache.get_json("key")
             assert "Failed to decode JSON for key" in str(exc_info.value)
@@ -265,7 +274,7 @@ class TestBaseCacheCoverage:
         """Test xadd method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.xadd', side_effect=RedisError("Stream error")):
+        with patch("redis.asyncio.Redis.xadd", side_effect=RedisError("Stream error")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.xadd("stream", {"field": "value"})
             assert "Failed to add to stream" in str(exc_info.value)
@@ -275,7 +284,7 @@ class TestBaseCacheCoverage:
         """Test xread method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.xread', side_effect=RedisError("Stream error")):
+        with patch("redis.asyncio.Redis.xread", side_effect=RedisError("Stream error")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.xread({"stream": "$"})
             assert "Failed to read from stream" in str(exc_info.value)
@@ -285,7 +294,7 @@ class TestBaseCacheCoverage:
         """Test xdel method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.xdel', side_effect=RedisError("Stream error")):
+        with patch("redis.asyncio.Redis.xdel", side_effect=RedisError("Stream error")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.xdel("stream", "id1", "id2")
             assert "Failed to delete from stream" in str(exc_info.value)
@@ -295,7 +304,7 @@ class TestBaseCacheCoverage:
         """Test xlen method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.xlen', side_effect=RedisError("Stream error")):
+        with patch("redis.asyncio.Redis.xlen", side_effect=RedisError("Stream error")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.xlen("stream")
             assert "Failed to get stream length" in str(exc_info.value)
@@ -305,7 +314,7 @@ class TestBaseCacheCoverage:
         """Test xtrim method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.xtrim', side_effect=RedisError("Stream error")):
+        with patch("redis.asyncio.Redis.xtrim", side_effect=RedisError("Stream error")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.xtrim("stream", 1000)
             assert "Failed to trim stream" in str(exc_info.value)
@@ -315,7 +324,7 @@ class TestBaseCacheCoverage:
         """Test lpush method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.lpush', side_effect=RedisError("Push error")):
+        with patch("redis.asyncio.Redis.lpush", side_effect=RedisError("Push error")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.lpush("list", "value1", "value2")
             assert "Failed to push to list" in str(exc_info.value)
@@ -325,7 +334,7 @@ class TestBaseCacheCoverage:
         """Test llen method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.llen', side_effect=RedisError("Length error")):
+        with patch("redis.asyncio.Redis.llen", side_effect=RedisError("Length error")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.llen("list")
             assert "Failed to get list length" in str(exc_info.value)
@@ -335,7 +344,7 @@ class TestBaseCacheCoverage:
         """Test info method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.info', side_effect=RedisError("Info error")):
+        with patch("redis.asyncio.Redis.info", side_effect=RedisError("Info error")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.info()
             assert "Failed to get server info" in str(exc_info.value)
@@ -345,7 +354,9 @@ class TestBaseCacheCoverage:
         """Test flushdb method with Redis error."""
         cache = BaseCache()
 
-        with patch('redis.asyncio.Redis.flushdb', side_effect=RedisError("Flush error")):
+        with patch(
+            "redis.asyncio.Redis.flushdb", side_effect=RedisError("Flush error")
+        ):
             with pytest.raises(CacheError) as exc_info:
                 await cache.flushdb()
             assert "Failed to flush database" in str(exc_info.value)
@@ -366,6 +377,7 @@ class TestBaseCacheCoverage:
 
         # Test with aware datetime in different timezone
         from datetime import timedelta
+
         # Create a simple timezone offset (-5 hours for Eastern)
         eastern_offset = timezone(timedelta(hours=-5))
         dt_eastern = datetime(2025, 1, 1, 12, 0, 0, tzinfo=eastern_offset)

@@ -7,7 +7,14 @@ import pytest
 from fullon_orm.models import Order
 
 
-def create_test_order(symbol="BTC/USDT", side="buy", volume=0.1, order_id="ORD_001", exchange="binance", **kwargs):
+def create_test_order(
+    symbol="BTC/USDT",
+    side="buy",
+    volume=0.1,
+    order_id="ORD_001",
+    exchange="binance",
+    **kwargs,
+):
     """Factory for test Order objects."""
     return Order(
         ex_order_id=order_id,
@@ -28,7 +35,7 @@ def create_test_order(symbol="BTC/USDT", side="buy", volume=0.1, order_id="ORD_0
         leverage=kwargs.get("leverage"),
         command=kwargs.get("command"),
         reason=kwargs.get("reason"),
-        timestamp=kwargs.get("timestamp", datetime.now(UTC))
+        timestamp=kwargs.get("timestamp", datetime.now(UTC)),
     )
 
 
@@ -40,10 +47,11 @@ class TestOrdersCacheLegacyMethods:
         """Test legacy push_open_order method."""
         # Use unique IDs to avoid conflicts with parallel tests
         import uuid
+
         unique_id = str(uuid.uuid4())[:8]
         local_oid = f"LOCAL456_{unique_id}"
         order_id_expected = f"ORDER123_{unique_id}"
-        
+
         # Push order using legacy method
         await orders_cache.push_open_order(order_id_expected, local_oid)
 
@@ -56,13 +64,14 @@ class TestOrdersCacheLegacyMethods:
         """Test pop_open_order returns immediately when data exists."""
         # Use unique IDs to avoid conflicts
         import uuid
+
         unique_id = str(uuid.uuid4())[:8]
         local_oid = f"LOCAL_FAST_{unique_id}"
         order_id_expected = f"ORDER_FAST_{unique_id}"
-        
+
         # First push an order
         await orders_cache.push_open_order(order_id_expected, local_oid)
-        
+
         # Pop should return immediately
         result = await orders_cache.pop_open_order(local_oid)
         assert result == order_id_expected
@@ -79,7 +88,7 @@ class TestOrdersCacheLegacyMethods:
             bot_id=123,
             uid=456,
             order_id="ORD789",
-            exchange="binance"
+            exchange="binance",
         )
 
         # Save order data
@@ -100,10 +109,7 @@ class TestOrdersCacheLegacyMethods:
         """Test updating existing order data."""
         # Save initial data
         initial_order = create_test_order(
-            status="open",
-            volume=1.0,
-            order_id="ORD999",
-            exchange="binance"
+            status="open", volume=1.0, order_id="ORD999", exchange="binance"
         )
         await orders_cache.save_order_data("binance", initial_order)
 
@@ -113,7 +119,7 @@ class TestOrdersCacheLegacyMethods:
             volume=1.0,
             final_volume=0.5,
             order_id="ORD999",
-            exchange="binance"
+            exchange="binance",
         )
         await orders_cache.save_order_data("binance", updated_order)
 
@@ -130,7 +136,7 @@ class TestOrdersCacheLegacyMethods:
             status="canceled",
             symbol="BTC/USDT",
             order_id="ORD_CANCEL",
-            exchange="binance"
+            exchange="binance",
         )
         await orders_cache.save_order_data("binance", cancelled_order)
 
@@ -153,7 +159,7 @@ class TestOrdersCacheLegacyMethods:
                 bot_id=100 + i,
                 uid=200,
                 order_id=f"ORD{i}",
-                exchange="kraken"
+                exchange="kraken",
             )
             await orders_cache.save_order_data("kraken", order)
 
@@ -181,7 +187,7 @@ class TestOrdersCacheLegacyMethods:
             await redis_client.hset(
                 "accounts",
                 "binance",
-                json.dumps({"balance": {"USD": 10000, "BTC": 0.5}})
+                json.dumps({"balance": {"USD": 10000, "BTC": 0.5}}),
             )
 
         # Now it should return data
@@ -208,7 +214,7 @@ class TestOrdersCacheLegacyMethods:
             "status": "filled",
             "command": "OPEN_LONG",
             "reason": "Signal triggered",
-            "timestamp": "2024-01-01 12:00:00.123"
+            "timestamp": "2024-01-01 12:00:00.123",
         }
 
         order = orders_cache._dict_to_order(data)
@@ -229,12 +235,12 @@ class TestOrdersCacheLegacyMethods:
             order_id="ORD_ERROR",
             exchange="binance",
             # Order model will handle timestamp properly
-            timestamp=datetime.now(UTC)
+            timestamp=datetime.now(UTC),
         )
-        
+
         # Should handle gracefully and not crash
         await orders_cache.save_order_data("binance", order)
-        
+
         # Verify order can still be retrieved (error handling should be internal)
         order = await orders_cache.get_order_status("binance", "ORD_ERROR")
         assert order is not None
@@ -267,7 +273,7 @@ class TestOrdersCacheLegacyIntegration:
             uid=456,
             order_id=order_id,
             exchange=exchange,
-            cat_ex_id=1
+            cat_ex_id=1,
         )
         await orders_cache.save_order_data(exchange, order)
 
@@ -287,7 +293,7 @@ class TestOrdersCacheLegacyIntegration:
             uid=456,
             order_id=order_id,
             exchange=exchange,
-            cat_ex_id=1
+            cat_ex_id=1,
         )
         await orders_cache.save_order_data(exchange, updated_order)
 
@@ -309,7 +315,7 @@ class TestOrdersCacheLegacyIntegration:
             final_volume=0.1,
             order_id=order_id,
             exchange=exchange,
-            cat_ex_id=1
+            cat_ex_id=1,
         )
         await orders_cache.save_order_data(exchange, filled_order)
 
@@ -321,19 +327,21 @@ class TestOrdersCacheLegacyIntegration:
     @pytest.mark.integration
     async def test_multiple_orders_workflow(self, orders_cache, worker_id):
         """Test handling multiple orders concurrently."""
-        import time
         import asyncio
-        
+        import time
+
         # Use worker-specific exchange and unique timestamp to avoid collisions
-        timestamp = str(time.time()).replace('.', '')[-8:]  # Last 8 digits for uniqueness
+        timestamp = str(time.time()).replace(".", "")[
+            -8:
+        ]  # Last 8 digits for uniqueness
         exchange = f"kraken_{worker_id}_{timestamp}"
-        
+
         # Create multiple orders with worker-specific IDs
         order_ids = []
         for i in range(10):
             order_id = f"MULTI_ORD_{worker_id}_{timestamp}_{i:03d}"
             local_id = f"LOCAL_{worker_id}_{timestamp}_{i:03d}"
-            
+
             # Push to queue with retry logic for parallel execution
             push_success = False
             for attempt in range(3):
@@ -343,12 +351,14 @@ class TestOrdersCacheLegacyIntegration:
                     break
                 except Exception:
                     if attempt == 2:
-                        pytest.skip(f"Failed to push order {order_id} after 3 attempts - Redis under stress")
+                        pytest.skip(
+                            f"Failed to push order {order_id} after 3 attempts - Redis under stress"
+                        )
                     await asyncio.sleep(0.1)
-            
+
             if not push_success:
                 continue
-            
+
             # Save order data with retry logic
             save_success = False
             for attempt in range(3):
@@ -364,21 +374,25 @@ class TestOrdersCacheLegacyIntegration:
                         uid=200,
                         order_id=order_id,
                         exchange=exchange,
-                        cat_ex_id=2
+                        cat_ex_id=2,
                     )
                     await orders_cache.save_order_data(exchange, order)
                     save_success = True
                     break
                 except Exception:
                     if attempt == 2:
-                        pytest.skip(f"Failed to save order {order_id} after 3 attempts - Redis under stress")
+                        pytest.skip(
+                            f"Failed to save order {order_id} after 3 attempts - Redis under stress"
+                        )
                     await asyncio.sleep(0.1)
-            
+
             if save_success:
                 order_ids.append((order_id, local_id))
 
         if len(order_ids) == 0:
-            pytest.skip("No orders successfully created - Redis under heavy parallel stress")
+            pytest.skip(
+                "No orders successfully created - Redis under heavy parallel stress"
+            )
 
         # Pop and process orders with retry logic and order verification
         successful_pops = 0
@@ -396,12 +410,16 @@ class TestOrdersCacheLegacyIntegration:
                         continue
                     else:
                         # Got a different order ID - this shouldn't happen with proper isolation
-                        pytest.skip(f"Got unexpected order ID {popped_id}, expected {order_id} - parallel interference")
+                        pytest.skip(
+                            f"Got unexpected order ID {popped_id}, expected {order_id} - parallel interference"
+                        )
                 except Exception:
                     if attempt == 2:
-                        pytest.skip(f"Failed to pop order {order_id} after 3 attempts - Redis under stress")
+                        pytest.skip(
+                            f"Failed to pop order {order_id} after 3 attempts - Redis under stress"
+                        )
                     await asyncio.sleep(0.1)
-            
+
             # If we successfully popped the order, update it
             if popped_id == order_id:
                 try:
@@ -416,7 +434,7 @@ class TestOrdersCacheLegacyIntegration:
                         uid=200,
                         order_id=order_id,
                         exchange=exchange,
-                        cat_ex_id=2
+                        cat_ex_id=2,
                     )
                     await orders_cache.save_order_data(exchange, updated_order)
                 except Exception:
@@ -425,9 +443,13 @@ class TestOrdersCacheLegacyIntegration:
 
         # We need at least some successful operations to validate the test
         if successful_pops == 0:
-            pytest.skip("No orders successfully popped - Redis under heavy parallel stress")
-        
-        assert successful_pops > 0, f"Expected at least 1 successful pop, got {successful_pops}"
+            pytest.skip(
+                "No orders successfully popped - Redis under heavy parallel stress"
+            )
+
+        assert (
+            successful_pops > 0
+        ), f"Expected at least 1 successful pop, got {successful_pops}"
 
         # Get all orders with retry logic
         all_orders = []
@@ -438,10 +460,14 @@ class TestOrdersCacheLegacyIntegration:
                     break
             except Exception:
                 if attempt == 2:
-                    pytest.skip("Failed to get orders after 3 attempts - Redis under stress")
+                    pytest.skip(
+                        "Failed to get orders after 3 attempts - Redis under stress"
+                    )
                 await asyncio.sleep(0.1)
 
-        assert len(all_orders) >= successful_pops, f"Expected at least {successful_pops} orders, got {len(all_orders)}"
+        assert (
+            len(all_orders) >= successful_pops
+        ), f"Expected at least {successful_pops} orders, got {len(all_orders)}"
 
         # Verify orders are properly saved (allow for some to be missing due to parallel stress)
         found_orders = 0
@@ -452,7 +478,9 @@ class TestOrdersCacheLegacyIntegration:
                 assert order.status in ["open", "pending"]
 
         # We should find at least some of our orders
-        assert found_orders > 0, f"Expected to find at least some orders, found {found_orders}"
+        assert (
+            found_orders > 0
+        ), f"Expected to find at least some orders, found {found_orders}"
 
     @pytest.mark.asyncio
     @pytest.mark.integration
@@ -480,7 +508,7 @@ class TestOrdersCacheLegacyIntegration:
             leverage=10.0,
             tick=0.01,
             plimit=44000.0,
-            ex_id=222  # Set numeric ex_id explicitly as expected by the test
+            ex_id=222,  # Set numeric ex_id explicitly as expected by the test
         )
         await orders_cache.save_order_data(exchange, comprehensive_order)
 
@@ -510,10 +538,7 @@ class TestOrdersCacheEdgeCases:
     @pytest.mark.asyncio
     async def test_empty_order_data(self, orders_cache):
         """Test handling minimal order data."""
-        minimal_order = create_test_order(
-            order_id="EMPTY_001",
-            exchange="test"
-        )
+        minimal_order = create_test_order(order_id="EMPTY_001", exchange="test")
         await orders_cache.save_order_data("test", minimal_order)
 
         order = await orders_cache.get_order_status("test", "EMPTY_001")
@@ -525,10 +550,7 @@ class TestOrdersCacheEdgeCases:
     async def test_invalid_order_id_format(self, orders_cache):
         """Test handling non-numeric order IDs."""
         order = create_test_order(
-            symbol="BTC/USDT",
-            volume=1.0,
-            order_id="NON_NUMERIC_ID",
-            exchange="test"
+            symbol="BTC/USDT", volume=1.0, order_id="NON_NUMERIC_ID", exchange="test"
         )
         await orders_cache.save_order_data("test", order)
 
@@ -553,41 +575,41 @@ class TestOrdersCacheEdgeCases:
     async def test_dict_to_order_with_numeric_conversions(self, orders_cache):
         """Test dict to order conversion with various numeric types."""
         data = {
-            'order_id': '67890',  # String that can be converted to int
-            'volume': '0.5',      # String float
-            'price': 45000,       # Integer
-            'final_volume': None, # None value
-            'leverage': '10',     # String leverage
-            'futures': 1,         # Truthy integer
-            'timestamp': '2024-01-01 12:00:00'  # Without microseconds
+            "order_id": "67890",  # String that can be converted to int
+            "volume": "0.5",  # String float
+            "price": 45000,  # Integer
+            "final_volume": None,  # None value
+            "leverage": "10",  # String leverage
+            "futures": 1,  # Truthy integer
+            "timestamp": "2024-01-01 12:00:00",  # Without microseconds
         }
 
         order = orders_cache._dict_to_order(data)
 
         assert order is not None
         assert order.order_id == 67890  # Converted to int
-        assert order.volume == 0.5      # Converted to float
-        assert order.price == 45000.0   # Converted to float
+        assert order.volume == 0.5  # Converted to float
+        assert order.price == 45000.0  # Converted to float
         assert order.final_volume is None
         assert order.leverage == 10.0
-        assert order.futures is True    # Converted to bool
+        assert order.futures is True  # Converted to bool
 
     @pytest.mark.asyncio
     async def test_dict_to_order_invalid_data(self, orders_cache):
         """Test dict to order conversion with invalid data."""
         data = {
-            'order_id': 'invalid-id',  # Non-numeric string
-            'volume': 'not-a-number',  # Invalid float
-            'price': None,             # None for numeric field
-            'timestamp': 'invalid-timestamp'
+            "order_id": "invalid-id",  # Non-numeric string
+            "volume": "not-a-number",  # Invalid float
+            "price": None,  # None for numeric field
+            "timestamp": "invalid-timestamp",
         }
 
         order = orders_cache._dict_to_order(data)
 
         assert order is not None
         # order_id should not be set as int since it's not numeric
-        assert not hasattr(order, 'order_id') or order.order_id is None
-        assert order.ex_order_id == 'invalid-id'
+        assert not hasattr(order, "order_id") or order.order_id is None
+        assert order.ex_order_id == "invalid-id"
         # volume should default to 0.0 due to conversion error
         assert order.volume == 0.0
 
@@ -598,21 +620,20 @@ class TestOrdersCacheEdgeCases:
 
         order = Order()
         order.order_id = 12345
-        order.ex_order_id = 'EX12345'
-        order.symbol = 'ETH/USDT'
-        order.side = 'sell'
+        order.ex_order_id = "EX12345"
+        order.symbol = "ETH/USDT"
+        order.side = "sell"
         order.volume = 1.5
         order.price = 3000.0
-        order.status = 'filled'
+        order.status = "filled"
         order.timestamp = datetime(2024, 1, 1, 12, 0, 0, 123456, tzinfo=UTC)
 
         data = orders_cache._order_to_dict(order)
 
         assert isinstance(data, dict)
-        assert data['order_id'] == 12345
-        assert data['ex_order_id'] == 'EX12345'
-        assert data['symbol'] == 'ETH/USDT'
+        assert data["order_id"] == 12345
+        assert data["ex_order_id"] == "EX12345"
+        assert data["symbol"] == "ETH/USDT"
         # Check that timestamp is formatted as string (the exact format depends on to_dict)
-        assert isinstance(data['timestamp'], str)
-        assert '2024-01-01' in data['timestamp']
-
+        assert isinstance(data["timestamp"], str)
+        assert "2024-01-01" in data["timestamp"]

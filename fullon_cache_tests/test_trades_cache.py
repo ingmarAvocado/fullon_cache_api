@@ -22,13 +22,11 @@ class TestTradesCacheQueues:
             volume=0.1,
             price=50000.0,
             cost=5000.0,
-            fee=5.0
+            fee=5.0,
         )
 
         # Push trade to list
-        length = await trades_cache.push_trade_list(
-            "BTC/USDT", "binance", trade
-        )
+        length = await trades_cache.push_trade_list("BTC/USDT", "binance", trade)
         assert length > 0
 
         # Verify trade status was updated
@@ -50,12 +48,10 @@ class TestTradesCacheQueues:
             price=50000.0,
             cost=5000.0,
             fee=5.0,
-            uid="123"
+            uid="123",
         )
 
-        length = await trades_cache.push_trade_list(
-            "BTC/USDT", "binance", trade
-        )
+        length = await trades_cache.push_trade_list("BTC/USDT", "binance", trade)
         assert length > 0
 
     @pytest.mark.asyncio
@@ -64,14 +60,14 @@ class TestTradesCacheQueues:
         # Use worker-specific symbol to avoid conflicts
         symbol = f"BTC_{worker_id}/USDT"
         exchange = f"binance_{worker_id}"
-        
+
         # Push trades to list with retry
         trades = [
             {
                 "id": f"btc_trade_{worker_id}_{i}",
                 "price": 50000.0 + i * 100,
                 "amount": 0.01 * (i + 1),
-                "side": "buy" if i % 2 == 0 else "sell"
+                "side": "buy" if i % 2 == 0 else "sell",
             }
             for i in range(5)
         ]
@@ -99,18 +95,18 @@ class TestTradesCacheQueues:
                 if attempt == 2:
                     retrieved_trades = []
                 await asyncio.sleep(0.1)
-        
+
         # Under parallel stress, accept partial results
         # We should have at least some trades if any were pushed
         if pushed_count > 0:
-            assert len(retrieved_trades) >= min(pushed_count, 1), f"Expected at least 1 trade, got {len(retrieved_trades)}"
+            assert len(retrieved_trades) >= min(
+                pushed_count, 1
+            ), f"Expected at least 1 trade, got {len(retrieved_trades)}"
         else:
             assert len(retrieved_trades) == 0
 
         # Verify list is now empty
-        empty_trades = await trades_cache.get_trades_list(
-            symbol, exchange
-        )
+        empty_trades = await trades_cache.get_trades_list(symbol, exchange)
         assert len(empty_trades) == 0
 
     @pytest.mark.asyncio
@@ -124,19 +120,15 @@ class TestTradesCacheQueues:
             volume=1.0,
             side="sell",
             cost=3000.0,
-            fee=3.0
+            fee=3.0,
         )
 
         # Push user trade
-        length = await trades_cache.push_my_trades_list(
-            "user_789", "binance", trade
-        )
+        length = await trades_cache.push_my_trades_list("user_789", "binance", trade)
         assert length == 1
 
         # Push another
-        length = await trades_cache.push_my_trades_list(
-            "user_789", "binance", trade
-        )
+        length = await trades_cache.push_my_trades_list("user_789", "binance", trade)
         assert length == 2
 
     @pytest.mark.asyncio
@@ -146,21 +138,19 @@ class TestTradesCacheQueues:
         trades = [
             Trade(
                 trade_id=f"trade_{i}",
-                ex_trade_id=f"EX_trade_{i}", 
+                ex_trade_id=f"EX_trade_{i}",
                 symbol="BTC/USDT",
                 price=100.0 * i,
                 volume=1.0,
                 side="buy",
                 cost=100.0 * i,
-                fee=1.0
+                fee=1.0,
             )
             for i in range(3)
         ]
 
         for trade in trades:
-            await trades_cache.push_my_trades_list(
-                "user_999", "kraken", trade
-            )
+            await trades_cache.push_my_trades_list("user_999", "kraken", trade)
 
         # Pop trades (FIFO)
         popped = await trades_cache.pop_my_trade("user_999", "kraken")
@@ -314,9 +304,9 @@ class TestTradesCacheIntegration:
                 "price": 3000.0 + i,
                 "amount": 0.1,
                 "side": "buy",
-                "timestamp": datetime.now(UTC).isoformat()
+                "timestamp": datetime.now(UTC).isoformat(),
             }
-            
+
             for attempt in range(3):
                 try:
                     result = await trades_cache.push_trade_list(symbol, exchange, trade)
@@ -341,14 +331,20 @@ class TestTradesCacheIntegration:
 
         # 3. Under parallel stress, accept partial success
         # At least some trades should have been pushed and retrieved
-        assert len(all_trades) >= min(trades_pushed, 5), f"Expected at least 5 trades, got {len(all_trades)}"
+        assert len(all_trades) >= min(
+            trades_pushed, 5
+        ), f"Expected at least 5 trades, got {len(all_trades)}"
 
     @pytest.mark.asyncio
     @pytest.mark.integration
     async def test_user_trade_queue_workflow(self, trades_cache, worker_id):
         """Test user trade queue management workflow."""
         user_id = f"user_integration_test_{worker_id}"
-        exchanges = [f"binance_{worker_id}", f"kraken_{worker_id}", f"coinbase_{worker_id}"]
+        exchanges = [
+            f"binance_{worker_id}",
+            f"kraken_{worker_id}",
+            f"coinbase_{worker_id}",
+        ]
 
         # 1. Push trades to different exchanges with retry
         successful_exchanges = []
@@ -360,12 +356,14 @@ class TestTradesCacheIntegration:
                     "symbol": "BTC/USDT",
                     "price": 50000.0,
                     "amount": 0.01,
-                    "side": "buy"
+                    "side": "buy",
                 }
-                
+
                 for attempt in range(3):
                     try:
-                        result = await trades_cache.push_my_trades_list(user_id, exchange, trade)
+                        result = await trades_cache.push_my_trades_list(
+                            user_id, exchange, trade
+                        )
                         if result > 0:
                             push_success = True
                         break
@@ -373,7 +371,7 @@ class TestTradesCacheIntegration:
                         if attempt == 2:
                             pass  # Allow push failure under stress
                         await asyncio.sleep(0.1)
-            
+
             if push_success:
                 successful_exchanges.append(exchange)
 
@@ -397,15 +395,19 @@ class TestTradesCacheIntegration:
         statuses = []
         for attempt in range(3):
             try:
-                statuses = await trades_cache.get_all_trade_statuses("USER_TRADE:STATUS")
+                statuses = await trades_cache.get_all_trade_statuses(
+                    "USER_TRADE:STATUS"
+                )
                 break
             except Exception:
                 if attempt == 2:
                     statuses = []
                 await asyncio.sleep(0.1)
-        
+
         # Under parallel stress, accept partial results
-        assert len(statuses) >= min(len(successful_exchanges), 1), f"Expected at least 1 status, got {len(statuses)}"
+        assert len(statuses) >= min(
+            len(successful_exchanges), 1
+        ), f"Expected at least 1 status, got {len(statuses)}"
 
         # 4. Pop trades from successful exchanges with retry
         popped_trades = 0
@@ -427,7 +429,9 @@ class TestTradesCacheIntegration:
         await trades_cache.delete_user_trade_statuses()
 
         # 6. Verify cleanup
-        remaining_statuses = await trades_cache.get_trade_status_keys("USER_TRADE:STATUS")
+        remaining_statuses = await trades_cache.get_trade_status_keys(
+            "USER_TRADE:STATUS"
+        )
         assert len(remaining_statuses) == 0
 
     @pytest.mark.asyncio
@@ -438,22 +442,25 @@ class TestTradesCacheIntegration:
         list_symbol = f"ETH_{worker_id}/USDT"
         user_id = f"user_{worker_id}"
         timestamp = datetime.now(UTC).timestamp()
-        
+
         # 1. Use list method to push trade with retry
         from fullon_orm.models import Trade
+
         list_trade = Trade(
             trade_id=f"LIST_{worker_id}_{timestamp}",
             price=3100.0,
             volume=0.5,
             side="sell",
             symbol=list_symbol,
-            time=datetime.now(UTC)
+            time=datetime.now(UTC),
         )
-        
+
         list_success = False
         for attempt in range(3):
             try:
-                result = await trades_cache.push_trade_list(list_symbol, "binance", list_trade)
+                result = await trades_cache.push_trade_list(
+                    list_symbol, "binance", list_trade
+                )
                 if result > 0:
                     list_success = True
                 break
@@ -469,13 +476,15 @@ class TestTradesCacheIntegration:
             volume=1.0,
             side="buy",
             symbol=list_symbol,
-            time=datetime.now(UTC)
+            time=datetime.now(UTC),
         )
-        
+
         user_success = False
         for attempt in range(3):
             try:
-                result = await trades_cache.push_my_trades_list(user_id, "binance", user_trade)
+                result = await trades_cache.push_my_trades_list(
+                    user_id, "binance", user_trade
+                )
                 if result > 0:
                     user_success = True
                 break
@@ -489,7 +498,9 @@ class TestTradesCacheIntegration:
         if list_success:
             for attempt in range(3):
                 try:
-                    list_trades = await trades_cache.get_trades_list(list_symbol, "binance")
+                    list_trades = await trades_cache.get_trades_list(
+                        list_symbol, "binance"
+                    )
                     break
                 except Exception:
                     if attempt == 2:
@@ -518,15 +529,18 @@ class TestTradesCacheIntegration:
         """Test error handling in various scenarios."""
         # Test with minimal trade data
         from fullon_orm.models import Trade
+
         minimal_trade = Trade(
             trade_id="TEST_001",
             price=50000.0,
             volume=0.1,
             side="buy",
             symbol="BTC/USDT",
-            time=datetime.now(UTC)
+            time=datetime.now(UTC),
         )
-        result = await trades_cache.push_trade_list("BTC/USDT", "binance", minimal_trade)
+        result = await trades_cache.push_trade_list(
+            "BTC/USDT", "binance", minimal_trade
+        )
         assert result > 0  # Should work with minimal trade data
 
         # Test with None timeout (should use 0)
@@ -549,61 +563,85 @@ class TestTradesCacheIntegration:
         import unittest.mock
 
         # Test push_trade_list error path
-        with unittest.mock.patch.object(trades_cache._cache, '_redis_context') as mock_context:
+        with unittest.mock.patch.object(
+            trades_cache._cache, "_redis_context"
+        ) as mock_context:
             mock_context.side_effect = Exception("Redis connection failed")
-            result = await trades_cache.push_trade_list("BTC/USDT", "binance", {"id": "test"})
+            result = await trades_cache.push_trade_list(
+                "BTC/USDT", "binance", {"id": "test"}
+            )
             assert result == 0
 
         # Test update_trade_status error path
-        with unittest.mock.patch.object(trades_cache._cache, '_redis_context') as mock_context:
+        with unittest.mock.patch.object(
+            trades_cache._cache, "_redis_context"
+        ) as mock_context:
             mock_context.side_effect = Exception("Redis connection failed")
             result = await trades_cache.update_trade_status("test_exchange")
             assert result is False
 
         # Test get_trade_status error path
-        with unittest.mock.patch.object(trades_cache._cache, '_redis_context') as mock_context:
+        with unittest.mock.patch.object(
+            trades_cache._cache, "_redis_context"
+        ) as mock_context:
             mock_context.side_effect = Exception("Redis connection failed")
             result = await trades_cache.get_trade_status("test_exchange")
             assert result is None
 
         # Test get_all_trade_statuses error path
-        with unittest.mock.patch.object(trades_cache._cache, '_redis_context') as mock_context:
+        with unittest.mock.patch.object(
+            trades_cache._cache, "_redis_context"
+        ) as mock_context:
             mock_context.side_effect = Exception("Redis connection failed")
             result = await trades_cache.get_all_trade_statuses()
             assert result == {}
 
         # Test get_trade_status_keys error path
-        with unittest.mock.patch.object(trades_cache._cache, '_redis_context') as mock_context:
+        with unittest.mock.patch.object(
+            trades_cache._cache, "_redis_context"
+        ) as mock_context:
             mock_context.side_effect = Exception("Redis connection failed")
             result = await trades_cache.get_trade_status_keys()
             assert result == []
 
         # Test update_user_trade_status error path
-        with unittest.mock.patch.object(trades_cache._cache, '_redis_context') as mock_context:
+        with unittest.mock.patch.object(
+            trades_cache._cache, "_redis_context"
+        ) as mock_context:
             mock_context.side_effect = Exception("Redis connection failed")
             result = await trades_cache.update_user_trade_status("test_user")
             assert result is False
 
         # Test delete_user_trade_statuses error path
-        with unittest.mock.patch.object(trades_cache._cache, '_redis_context') as mock_context:
+        with unittest.mock.patch.object(
+            trades_cache._cache, "_redis_context"
+        ) as mock_context:
             mock_context.side_effect = Exception("Redis connection failed")
             result = await trades_cache.delete_user_trade_statuses()
             assert result is False
 
         # Test push_my_trades_list error path
-        with unittest.mock.patch.object(trades_cache._cache, '_redis_context') as mock_context:
+        with unittest.mock.patch.object(
+            trades_cache._cache, "_redis_context"
+        ) as mock_context:
             mock_context.side_effect = Exception("Redis connection failed")
-            result = await trades_cache.push_my_trades_list("user", "exchange", {"id": "test"})
+            result = await trades_cache.push_my_trades_list(
+                "user", "exchange", {"id": "test"}
+            )
             assert result == 0
 
         # Test pop_my_trade error path (not timeout)
-        with unittest.mock.patch.object(trades_cache._cache, '_redis_context') as mock_context:
+        with unittest.mock.patch.object(
+            trades_cache._cache, "_redis_context"
+        ) as mock_context:
             mock_context.side_effect = Exception("Redis connection failed")
             result = await trades_cache.pop_my_trade("user", "exchange")
             assert result is None
 
         # Test get_trades_list error path
-        with unittest.mock.patch.object(trades_cache._cache, '_redis_context') as mock_context:
+        with unittest.mock.patch.object(
+            trades_cache._cache, "_redis_context"
+        ) as mock_context:
             mock_context.side_effect = Exception("Redis connection failed")
             result = await trades_cache.get_trades_list("BTC/USDT", "binance")
             assert result == []
@@ -619,16 +657,17 @@ class TestTradesCacheIntegration:
 
         # Insert invalid JSON and a valid Trade JSON
         from fullon_orm.models import Trade
+
         valid_trade = Trade(
             trade_id="VALID_001",
             price=50000.0,
             volume=0.1,
-            side="buy", 
+            side="buy",
             symbol=symbol,
-            time=datetime.now(UTC)
+            time=datetime.now(UTC),
         )
         valid_trade_json = json.dumps(valid_trade.to_dict())
-        
+
         async with trades_cache._cache._redis_context() as redis_client:
             await redis_client.rpush(redis_key, "invalid_json_data")
             await redis_client.rpush(redis_key, "{invalid_json}")
@@ -640,6 +679,7 @@ class TestTradesCacheIntegration:
         assert len(trades) == 1
         # The valid trade should be a Trade object, not a dict
         from fullon_orm.models import Trade
+
         assert isinstance(trades[0], Trade)
 
     @pytest.mark.asyncio
@@ -649,7 +689,9 @@ class TestTradesCacheIntegration:
 
         # Test blocking pop with timeout that actually waits
         start = time.time()
-        result = await trades_cache.pop_my_trade("empty_user", "empty_exchange", timeout=1)
+        result = await trades_cache.pop_my_trade(
+            "empty_user", "empty_exchange", timeout=1
+        )
         elapsed = time.time() - start
 
         assert result is None

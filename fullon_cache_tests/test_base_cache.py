@@ -9,7 +9,6 @@ import json
 from datetime import datetime
 
 import pytest
-
 from fullon_cache import BaseCache, CacheError
 from fullon_cache.exceptions import ConnectionError, SerializationError
 
@@ -148,7 +147,7 @@ class TestBaseCacheJsonOperations:
         complex_data = {
             "user": {"id": 1, "name": "John"},
             "items": [1, 2, 3],
-            "metadata": {"created": "2024-01-01", "tags": ["a", "b"]}
+            "metadata": {"created": "2024-01-01", "tags": ["a", "b"]},
         }
         assert await base_cache.set_json("json2", complex_data) is True
         assert await base_cache.get_json("json2") == complex_data
@@ -166,6 +165,7 @@ class TestBaseCacheJsonOperations:
     @pytest.mark.asyncio
     async def test_json_serialization_error(self, base_cache):
         """Test JSON serialization errors."""
+
         # Object that can't be serialized
         class CustomObject:
             pass
@@ -189,10 +189,7 @@ class TestBaseCacheJsonOperations:
     @pytest.mark.asyncio
     async def test_json_with_datetime(self, base_cache):
         """Test JSON with datetime serialization."""
-        data = {
-            "timestamp": datetime.now(),
-            "value": 123
-        }
+        data = {"timestamp": datetime.now(), "value": 123}
 
         # Should use default=str for datetime
         assert await base_cache.set_json("datetime", data) is True
@@ -266,6 +263,7 @@ class TestBaseCacheListOperations:
         """Test blocking pop operation."""
         # Use unique keys to avoid test interference
         import uuid
+
         suffix = str(uuid.uuid4())[:8]
 
         # Blocking pop with timeout - no data
@@ -283,7 +281,9 @@ class TestBaseCacheListOperations:
         list5_key = f"list5_{suffix}"
         await base_cache.rpush(list4_key, "value4")
         await base_cache.rpush(list5_key, "value5")
-        result = await base_cache.blpop([f"empty_{suffix}", list5_key, list4_key], timeout=1)
+        result = await base_cache.blpop(
+            [f"empty_{suffix}", list5_key, list4_key], timeout=1
+        )
         assert result == (list5_key, "value5")
 
     @pytest.mark.asyncio
@@ -305,11 +305,11 @@ class TestBaseCachePatternOperations:
         # Use worker-specific prefixes to avoid conflicts
         scan_prefix = f"scan_{worker_id}_test"
         other_prefix = f"other_{worker_id}"
-        
+
         # Create test keys with retry for parallel execution
         created_scan_keys = 0
         created_other_keys = 0
-        
+
         for i in range(10):
             # Try to create scan keys
             for attempt in range(3):
@@ -321,7 +321,7 @@ class TestBaseCachePatternOperations:
                     if attempt == 2:
                         pass  # Allow some failures under stress
                     await asyncio.sleep(0.1)
-            
+
             # Try to create other keys
             for attempt in range(3):
                 try:
@@ -348,9 +348,13 @@ class TestBaseCachePatternOperations:
 
         # Under parallel stress, accept partial results
         # We should find at least some of the keys we created
-        assert len(scan_keys) <= created_scan_keys, f"Found more scan keys ({len(scan_keys)}) than created ({created_scan_keys})"
+        assert (
+            len(scan_keys) <= created_scan_keys
+        ), f"Found more scan keys ({len(scan_keys)}) than created ({created_scan_keys})"
         if created_scan_keys > 0:
-            assert len(scan_keys) >= min(created_scan_keys // 2, 1), f"Found too few scan keys: {len(scan_keys)} vs {created_scan_keys} created"
+            assert len(scan_keys) >= min(
+                created_scan_keys // 2, 1
+            ), f"Found too few scan keys: {len(scan_keys)} vs {created_scan_keys} created"
             assert all(key.startswith(scan_prefix) for key in scan_keys)
 
         # Test scan with count hint if we have any keys
@@ -394,11 +398,11 @@ class TestBaseCachePatternOperations:
         # Use worker-specific prefixes to avoid conflicts
         delete_prefix = f"delete_batch_{worker_id}"
         keep_prefix = f"keep_{worker_id}"
-        
+
         # Create keys with retry logic for parallel execution
         created_delete_keys = 0
         created_keep_keys = 0
-        
+
         for i in range(100):
             # Try to create delete keys
             for attempt in range(3):
@@ -410,7 +414,7 @@ class TestBaseCachePatternOperations:
                     if attempt == 2:
                         pass  # Allow some failures under stress
                     await asyncio.sleep(0.1)
-            
+
             # Try to create keep keys
             for attempt in range(3):
                 try:
@@ -434,10 +438,14 @@ class TestBaseCachePatternOperations:
                 await asyncio.sleep(0.1)
 
         # Under parallel stress, accept partial results
-        assert deleted <= created_delete_keys, f"Deleted more keys ({deleted}) than created ({created_delete_keys})"
+        assert (
+            deleted <= created_delete_keys
+        ), f"Deleted more keys ({deleted}) than created ({created_delete_keys})"
         if created_delete_keys > 0:
             # Accept at least 50% success rate
-            assert deleted >= created_delete_keys // 2, f"Too few keys deleted: {deleted} vs {created_delete_keys} created"
+            assert (
+                deleted >= created_delete_keys // 2
+            ), f"Too few keys deleted: {deleted} vs {created_delete_keys} created"
 
         # Verify deletion worked (with retry)
         remaining = []
@@ -460,7 +468,7 @@ class TestBaseCachePatternOperations:
         """Test deleting more than 1000 keys (batch size)."""
         # Use worker-specific prefix to avoid conflicts
         large_prefix = f"large_{worker_id}"
-        
+
         # Create 1500 keys with retry logic
         created_keys = 0
         for i in range(1500):
@@ -488,8 +496,12 @@ class TestBaseCachePatternOperations:
         # Under parallel stress, accept partial success
         # At least 50% of created keys should be deleted
         if created_keys > 0:
-            assert deleted >= created_keys // 2, f"Too few keys deleted: {deleted} vs {created_keys} created"
-            assert deleted <= created_keys, f"Deleted more keys ({deleted}) than created ({created_keys})"
+            assert (
+                deleted >= created_keys // 2
+            ), f"Too few keys deleted: {deleted} vs {created_keys} created"
+            assert (
+                deleted <= created_keys
+            ), f"Deleted more keys ({deleted}) than created ({created_keys})"
 
         # Verify deletion (with retry)
         count = 0
@@ -553,8 +565,8 @@ class TestBaseCachePubSub:
 
         # Verify messages received
         assert len(received) == 3
-        assert all(msg['type'] == 'message' for msg in received)
-        assert [msg['data'] for msg in received] == ["message1", "message2", "message3"]
+        assert all(msg["type"] == "message" for msg in received)
+        assert [msg["data"] for msg in received] == ["message1", "message2", "message3"]
 
     @pytest.mark.asyncio
     async def test_subscribe_multiple_channels(self, base_cache):
@@ -582,7 +594,7 @@ class TestBaseCachePubSub:
         await sub_task
 
         assert len(received) == 2
-        channels = [msg['channel'] for msg in received]
+        channels = [msg["channel"] for msg in received]
         assert "chan1" in channels
         assert "chan2" in channels
 
@@ -613,9 +625,9 @@ class TestBaseCacheUtility:
 
         # Check basic info structure
         assert isinstance(info, dict)
-        assert 'redis_version' in info
-        assert 'connected_clients' in info
-        assert 'used_memory' in info
+        assert "redis_version" in info
+        assert "connected_clients" in info
+        assert "used_memory" in info
 
     @pytest.mark.asyncio
     async def test_flushdb(self, base_cache):
@@ -657,7 +669,7 @@ class TestBaseCachePipeline:
         # Use worker-specific keys to avoid collisions
         key1 = f"trans1_{worker_id}"
         key2 = f"trans2_{worker_id}"
-        
+
         # Retry logic for parallel execution stress
         for attempt in range(3):
             try:
@@ -673,11 +685,11 @@ class TestBaseCachePipeline:
                     val2 = await base_cache.get(key2)
                     if val1 == "value1" and val2 == "value2":
                         break
-                        
+
                 # If partial failure, clean up and retry
                 await base_cache.delete(key1)
                 await base_cache.delete(key2)
-                
+
             except Exception:
                 # Clean up on error and retry
                 try:
@@ -685,11 +697,11 @@ class TestBaseCachePipeline:
                     await base_cache.delete(key2)
                 except:
                     pass
-                    
+
                 if attempt == 2:  # Last attempt
                     raise
                 await asyncio.sleep(0.1)  # Brief delay before retry
-        
+
         # Final verification
         assert await base_cache.get(key1) == "value1"
         assert await base_cache.get(key2) == "value2"
@@ -708,8 +720,10 @@ class TestBaseCacheErrorHandling:
             class MockRedis:
                 async def get(self, *args, **kwargs):
                     raise RedisError("Connection lost")
+
                 async def aclose(self):
                     pass
+
             return MockRedis()
 
         monkeypatch.setattr(base_cache, "_get_redis", mock_get_redis)
@@ -742,10 +756,10 @@ class TestBaseCacheIntegration:
         """Test concurrent cache operations."""
         import time
         import uuid
-        
+
         # Use unique timestamp and UUID to prevent conflicts
         test_id = f"{worker_id}_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}"
-        
+
         async def writer(n):
             success_count = 0
             for i in range(10):
@@ -755,7 +769,7 @@ class TestBaseCacheIntegration:
                 except Exception:
                     pass  # Allow some failures under stress
             return success_count
-            
+
         async def reader(n):
             results = []
             for i in range(10):
@@ -766,22 +780,28 @@ class TestBaseCacheIntegration:
                 except Exception:
                     pass  # Allow some failures under stress
             return results
-            
+
         # Run concurrent writers and track successes
-        write_results = await asyncio.gather(*[writer(i) for i in range(5)], return_exceptions=True)
+        write_results = await asyncio.gather(
+            *[writer(i) for i in range(5)], return_exceptions=True
+        )
         successful_writes = sum(r for r in write_results if isinstance(r, int))
-        
+
         # Only read if we actually wrote something
         if successful_writes > 0:
             # Small delay to ensure writes are propagated
             await asyncio.sleep(0.1)
-            
+
             # Run concurrent readers
-            results = await asyncio.gather(*[reader(i) for i in range(5)], return_exceptions=True)
-            total_successful = sum(len(result) for result in results if isinstance(result, list))
+            results = await asyncio.gather(
+                *[reader(i) for i in range(5)], return_exceptions=True
+            )
+            total_successful = sum(
+                len(result) for result in results if isinstance(result, list)
+            )
         else:
             total_successful = 0
-        
+
         # Under parallel stress, we expect significant data loss - be more lenient
         if successful_writes > 0:
             # Allow for significant data loss under parallel stress
@@ -793,13 +813,19 @@ class TestBaseCacheIntegration:
                 value = await base_cache.get(test_key)
                 if value != "test":
                     # System is unresponsive - this is a real failure
-                    assert False, f"System unresponsive: wrote {successful_writes} operations but can't perform basic read/write"
+                    assert (
+                        False
+                    ), f"System unresponsive: wrote {successful_writes} operations but can't perform basic read/write"
                 else:
                     # System is responsive but had data loss under stress - acceptable
-                    print(f"WARNING: Wrote {successful_writes} but read {total_successful} under parallel stress - system responsive")
+                    print(
+                        f"WARNING: Wrote {successful_writes} but read {total_successful} under parallel stress - system responsive"
+                    )
             else:
                 # We read something back - good enough under parallel stress
-                print(f"SUCCESS: Wrote {successful_writes}, read {total_successful} under parallel stress")
+                print(
+                    f"SUCCESS: Wrote {successful_writes}, read {total_successful} under parallel stress"
+                )
         else:
             # If no writes succeeded, ensure basic functionality
             test_key = f"stability_test:{test_id}"
@@ -819,7 +845,7 @@ class TestBaseCacheIntegration:
 
         # Check performance
         stats = benchmark_async.stats
-        assert stats['mean'] < 0.05  # Should be under 50ms (relaxed for CI)
+        assert stats["mean"] < 0.05  # Should be under 50ms (relaxed for CI)
         print(f"Average get time: {stats['mean']*1000:.2f}ms")
 
 
@@ -834,7 +860,7 @@ class TestBaseCacheContextManager:
             await cache.set("ctx_test", "test_value")
             value = await cache.get("ctx_test")
             assert value == "test_value"
-            
+
             # Test connection is active
             assert await cache.ping() is True
             assert not cache._closed
@@ -848,7 +874,7 @@ class TestBaseCacheContextManager:
         async with BaseCache(key_prefix="ctx") as cache:
             await cache.set("prefixed_key", "prefixed_value")
             assert await cache.get("prefixed_key") == "prefixed_value"
-            
+
         # Verify key was properly prefixed in Redis
         verify_cache = BaseCache()
         assert await verify_cache.get("ctx:prefixed_key") == "prefixed_value"
@@ -858,17 +884,17 @@ class TestBaseCacheContextManager:
     async def test_context_manager_exception_handling(self, clean_redis):
         """Test that cleanup happens even when exceptions occur."""
         cache = None
-        
+
         with pytest.raises(ValueError):
             async with BaseCache() as cache:
                 # Verify cache is working
-                await cache.set("exception_test", "before_exception") 
+                await cache.set("exception_test", "before_exception")
                 assert await cache.get("exception_test") == "before_exception"
                 assert not cache._closed
-                
+
                 # Raise exception to test cleanup
                 raise ValueError("Test exception")
-        
+
         # Should still be cleaned up despite exception
         assert cache._closed
 
@@ -877,20 +903,20 @@ class TestBaseCacheContextManager:
         """Test nested context manager usage."""
         async with BaseCache(key_prefix="outer") as outer_cache:
             await outer_cache.set("outer_key", "outer_value")
-            
+
             async with BaseCache(key_prefix="inner") as inner_cache:
                 await inner_cache.set("inner_key", "inner_value")
-                
+
                 # Both should work
                 assert await outer_cache.get("outer_key") == "outer_value"
                 assert await inner_cache.get("inner_key") == "inner_value"
                 assert not outer_cache._closed
                 assert not inner_cache._closed
-            
+
             # Inner should be closed, outer still open
             assert inner_cache._closed
             assert not outer_cache._closed
-            
+
         # Both should be closed now
         assert outer_cache._closed
         assert inner_cache._closed
@@ -905,11 +931,11 @@ class TestBaseCacheContextManager:
             hash_data = await cache.hgetall("ctx_hash")
             assert hash_data["field1"] == "value1"
             assert hash_data["field2"] == "value2"
-            
+
             # List operations
             await cache.lpush("ctx_list", "item1", "item2")
             assert await cache.llen("ctx_list") == 2
-            
+
             # JSON operations
             test_data = {"key": "value", "number": 42}
             await cache.set_json("ctx_json", test_data)
@@ -924,7 +950,7 @@ class TestBaseCacheContextManager:
             subscribers = await cache.publish("ctx_channel", "test_message")
             # No subscribers yet, so should return 0
             assert subscribers == 0
-            
+
             # Test that publish didn't break anything
             await cache.set("pub_test", "after_publish")
             assert await cache.get("pub_test") == "after_publish"
@@ -934,7 +960,7 @@ class TestBaseCacheContextManager:
         """Test that using closed cache raises error."""
         cache = BaseCache()
         await cache.close()
-        
+
         with pytest.raises(ConnectionError, match="Cache is closed"):
             async with cache:
                 pass
@@ -944,15 +970,15 @@ class TestBaseCacheContextManager:
         """Test manual close within context doesn't break cleanup."""
         async with BaseCache() as cache:
             await cache.set("manual_close_test", "value")
-            
+
             # Manual close
             await cache.close()
             assert cache._closed
-            
+
             # Should not be able to perform operations after manual close
             with pytest.raises(ConnectionError, match="Cache is closed"):
                 await cache.get("manual_close_test")
-        
+
         # Should still be closed
         assert cache._closed
 
@@ -963,26 +989,27 @@ class TestBaseCacheContextManager:
         async with BaseCache() as cache1:
             await cache1.set("seq1", "value1")
             assert await cache1.get("seq1") == "value1"
-        
+
         assert cache1._closed
-        
+
         # Second context
         async with BaseCache() as cache2:
             assert await cache2.get("seq1") == "value1"  # Should persist
             await cache2.set("seq2", "value2")
-            
+
         assert cache2._closed
-        
+
         # Third context
         async with BaseCache() as cache3:
             assert await cache3.get("seq1") == "value1"
             assert await cache3.get("seq2") == "value2"
-            
+
         assert cache3._closed
 
     @pytest.mark.asyncio
     async def test_context_manager_concurrent_usage(self, clean_redis):
         """Test concurrent context manager usage."""
+
         async def cache_worker(worker_id: int):
             async with BaseCache(key_prefix=f"worker{worker_id}") as cache:
                 await cache.set("id", str(worker_id))
@@ -990,11 +1017,11 @@ class TestBaseCacheContextManager:
                 value = await cache.get("id")
                 assert value == str(worker_id)
                 return worker_id
-        
+
         # Run 5 workers concurrently
         tasks = [cache_worker(i) for i in range(5)]
         results = await asyncio.gather(*tasks)
-        
+
         # All workers should complete successfully
         assert sorted(results) == list(range(5))
 
@@ -1002,21 +1029,21 @@ class TestBaseCacheContextManager:
     async def test_context_manager_pubsub_cleanup(self, clean_redis):
         """Test that pubsub clients are properly cleaned up."""
         cache = None
-        
+
         async with BaseCache() as cache:
             # Create a pubsub client (this should add to _pubsub_clients)
             redis_client = await cache._get_redis()
             pubsub = redis_client.pubsub()
             await pubsub.subscribe("test_channel")
-            
+
             # Manually add to cache's pubsub clients to track
             cache._pubsub_clients["test_client"] = pubsub
-            
+
             # Verify it's tracked
             assert len(cache._pubsub_clients) == 1
             assert "test_client" in cache._pubsub_clients
             assert not cache._closed
-            
+
         # After context exit, pubsub clients should be cleaned up
         assert cache._closed
         assert len(cache._pubsub_clients) == 0
@@ -1025,18 +1052,18 @@ class TestBaseCacheContextManager:
     async def test_context_manager_operations_after_close(self, clean_redis):
         """Test that operations fail after context manager closes the cache."""
         cache = None
-        
+
         async with BaseCache() as cache:
             # Verify cache works within context
             await cache.set("test_key", "test_value")
             assert await cache.get("test_key") == "test_value"
-            
+
         # After context, cache should be closed and operations should fail
         assert cache._closed
-        
+
         with pytest.raises(ConnectionError, match="Cache is closed"):
             await cache.set("another_key", "value")
-            
+
         with pytest.raises(ConnectionError, match="Cache is closed"):
             await cache.get("test_key")
 
@@ -1047,39 +1074,39 @@ class TestBaseCacheContextManager:
             # Manually close within context
             await cache.close()
             assert cache._closed
-            
+
             # Calling close again should be safe (idempotent)
             await cache.close()
             assert cache._closed
-            
+
         # Context manager __aexit__ calls close again - should be safe
         assert cache._closed
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_context_manager_resource_cleanup_on_exception(self, clean_redis):
         """Test that resources are cleaned up even when exceptions occur."""
         cache = None
-        
+
         try:
             async with BaseCache() as cache:
                 # Create some resources
                 await cache.set("resource_test", "value")
-                
+
                 # Add a pubsub client to track cleanup
                 redis_client = await cache._get_redis()
                 pubsub = redis_client.pubsub()
-                await pubsub.subscribe("exception_channel") 
+                await pubsub.subscribe("exception_channel")
                 cache._pubsub_clients["exception_test"] = pubsub
-                
+
                 assert len(cache._pubsub_clients) == 1
                 assert not cache._closed
-                
+
                 # Force an exception
                 raise RuntimeError("Test exception for cleanup verification")
-                
+
         except RuntimeError:
             pass  # Expected exception
-        
+
         # Verify cleanup happened despite the exception
         assert cache._closed
         assert len(cache._pubsub_clients) == 0
@@ -1088,22 +1115,22 @@ class TestBaseCacheContextManager:
     async def test_derived_cache_context_cleanup(self, clean_redis):
         """Test that derived cache classes properly delegate cleanup."""
         from fullon_cache import AccountCache, BotCache, OrdersCache
-        
+
         # Test AccountCache
         async with AccountCache() as account_cache:
-            assert hasattr(account_cache, '_cache')
+            assert hasattr(account_cache, "_cache")
             assert not account_cache._cache._closed
         assert account_cache._cache._closed
-        
-        # Test BotCache  
+
+        # Test BotCache
         async with BotCache() as bot_cache:
-            assert hasattr(bot_cache, '_cache')
+            assert hasattr(bot_cache, "_cache")
             assert not bot_cache._cache._closed
         assert bot_cache._cache._closed
-        
+
         # Test OrdersCache
         async with OrdersCache() as orders_cache:
-            assert hasattr(orders_cache, '_cache')
+            assert hasattr(orders_cache, "_cache")
             assert not orders_cache._cache._closed
         assert orders_cache._cache._closed
 
@@ -1111,49 +1138,51 @@ class TestBaseCacheContextManager:
     async def test_context_manager_connection_state_verification(self, clean_redis):
         """Test that context managers properly manage connection state."""
         cache = None
-        
+
         async with BaseCache() as cache:
             # Should be able to get a connection
             conn = await cache._get_redis()
             assert conn is not None
-            
+
             # Connection should work
             await conn.ping()
             await conn.aclose()  # Clean up this test connection
-            
+
         # After context exit, should not be able to get connections
         assert cache._closed
-        
+
         with pytest.raises(ConnectionError, match="Cache is closed"):
             await cache._get_redis()
 
     @pytest.mark.asyncio
-    async def test_context_manager_cleanup_verification_real_scenario(self, clean_redis):
+    async def test_context_manager_cleanup_verification_real_scenario(
+        self, clean_redis
+    ):
         """Test a realistic scenario with actual cache operations and verify cleanup."""
         cache = None
-        
+
         async with BaseCache(key_prefix="test_scenario") as cache:
             # Perform various operations that might create resources
             await cache.set("key1", "value1")
-            await cache.hset("hash1", "field1", "value1") 
+            await cache.hset("hash1", "field1", "value1")
             await cache.lpush("list1", "item1", "item2")
-            
+
             # Set JSON data
             await cache.set_json("json_data", {"user": "test", "score": 100})
-            
+
             # Verify everything works
             assert await cache.get("key1") == "value1"
             assert await cache.hget("hash1", "field1") == "value1"
             assert await cache.llen("list1") == 2
             json_data = await cache.get_json("json_data")
             assert json_data["user"] == "test"
-            
+
             # Cache should be active
             assert not cache._closed
-        
+
         # After context exit, cache should be closed and unusable
         assert cache._closed
-        
+
         # Verify data persisted in Redis (via new cache instance)
         verify_cache = BaseCache(key_prefix="test_scenario")
         try:

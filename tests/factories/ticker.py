@@ -95,4 +95,3 @@ class TickerFactory:
                 )
             )
         return items
-

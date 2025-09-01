@@ -10,7 +10,6 @@ import time
 from typing import Any
 
 import pytest
-
 from fullon_cache.base_cache import BaseCache
 from fullon_cache.connection import ConnectionPool
 from fullon_cache.event_loop import (
@@ -28,12 +27,14 @@ class PerformanceBenchmark:
     def __init__(self):
         self.results: dict[str, Any] = {}
 
-    async def benchmark_basic_operations(self, iterations: int = 1000) -> dict[str, float]:
+    async def benchmark_basic_operations(
+        self, iterations: int = 1000
+    ) -> dict[str, float]:
         """Benchmark basic Redis operations.
-        
+
         Args:
             iterations: Number of operations to perform
-            
+
         Returns:
             Dict with timing results
         """
@@ -78,18 +79,19 @@ class PerformanceBenchmark:
             "total_time": set_time + get_time + json_set_time + json_get_time,
         }
 
-    async def benchmark_concurrent_operations(self,
-                                            concurrent_tasks: int = 100,
-                                            operations_per_task: int = 100) -> dict[str, float]:
+    async def benchmark_concurrent_operations(
+        self, concurrent_tasks: int = 100, operations_per_task: int = 100
+    ) -> dict[str, float]:
         """Benchmark concurrent Redis operations.
-        
+
         Args:
             concurrent_tasks: Number of concurrent tasks
             operations_per_task: Operations per task
-            
+
         Returns:
             Dict with timing results
         """
+
         async def worker_task(task_id: int) -> float:
             """Worker task for concurrent benchmarking."""
             cache = BaseCache()
@@ -109,7 +111,9 @@ class PerformanceBenchmark:
         task_times = await asyncio.gather(*tasks)
         total_time = time.perf_counter() - start_time
 
-        total_operations = concurrent_tasks * operations_per_task * 3  # set + get + delete
+        total_operations = (
+            concurrent_tasks * operations_per_task * 3
+        )  # set + get + delete
 
         return {
             "total_ops_per_sec": total_operations / total_time,
@@ -121,13 +125,14 @@ class PerformanceBenchmark:
             "operations_per_task": operations_per_task,
         }
 
-    async def benchmark_pubsub_performance(self,
-                                         message_count: int = 1000) -> dict[str, float]:
+    async def benchmark_pubsub_performance(
+        self, message_count: int = 1000
+    ) -> dict[str, float]:
         """Benchmark pub/sub performance.
-        
+
         Args:
             message_count: Number of messages to publish/receive
-            
+
         Returns:
             Dict with timing results
         """
@@ -182,22 +187,23 @@ class TestUvloopPerformance:
 
         # Get policy info
         info = manager.get_policy_info()
-        assert 'active_policy' in info
-        assert 'uvloop_available' in info
-        assert 'platform' in info
+        assert "active_policy" in info
+        assert "uvloop_available" in info
+        assert "platform" in info
 
         # In test environment, we force asyncio regardless of uvloop availability
         # Check if we're in test mode by looking for the env var
         import os
-        if os.getenv('FULLON_CACHE_EVENT_LOOP') == 'asyncio':
+
+        if os.getenv("FULLON_CACHE_EVENT_LOOP") == "asyncio":
             # Test environment - should use asyncio
-            assert info['active_policy'] == 'asyncio'
-        elif info['uvloop_available']:
+            assert info["active_policy"] == "asyncio"
+        elif info["uvloop_available"]:
             # Production environment with uvloop available
-            assert info['active_policy'] == 'uvloop'
+            assert info["active_policy"] == "uvloop"
         else:
             # Production environment without uvloop
-            assert info['active_policy'] == 'asyncio'
+            assert info["active_policy"] == "asyncio"
 
     async def test_uvloop_detection(self):
         """Test uvloop availability detection."""
@@ -223,20 +229,20 @@ class TestUvloopPerformance:
         info = pool.get_performance_info()
 
         # Check required keys
-        assert 'redis_config' in info
-        assert 'event_loop_info' in info
-        assert 'pool_stats' in info
+        assert "redis_config" in info
+        assert "event_loop_info" in info
+        assert "pool_stats" in info
 
         # Check event loop info
-        event_loop_info = info['event_loop_info']
-        assert 'active_policy' in event_loop_info
-        assert 'uvloop_available' in event_loop_info
+        event_loop_info = info["event_loop_info"]
+        assert "active_policy" in event_loop_info
+        assert "uvloop_available" in event_loop_info
 
         # Check Redis config
-        redis_config = info['redis_config']
-        assert 'host' in redis_config
-        assert 'port' in redis_config
-        assert 'max_connections' in redis_config
+        redis_config = info["redis_config"]
+        assert "host" in redis_config
+        assert "port" in redis_config
+        assert "max_connections" in redis_config
 
     @pytest.mark.performance
     async def test_basic_operations_benchmark(self):
@@ -248,9 +254,13 @@ class TestUvloopPerformance:
 
         # Verify results structure
         expected_keys = [
-            'set_ops_per_sec', 'get_ops_per_sec',
-            'json_set_ops_per_sec', 'json_get_ops_per_sec',
-            'avg_set_time_ms', 'avg_get_time_ms', 'total_time'
+            "set_ops_per_sec",
+            "get_ops_per_sec",
+            "json_set_ops_per_sec",
+            "json_get_ops_per_sec",
+            "avg_set_time_ms",
+            "avg_get_time_ms",
+            "total_time",
         ]
 
         for key in expected_keys:
@@ -267,10 +277,10 @@ class TestUvloopPerformance:
 
         # Performance expectations (adjust based on environment)
         # These are conservative thresholds that should pass even without uvloop
-        assert results['set_ops_per_sec'] > 50  # At least 50 ops/sec (relaxed for CI)
-        assert results['get_ops_per_sec'] > 30  # At least 30 ops/sec (relaxed for CI)
-        assert results['avg_set_time_ms'] < 100  # Less than 100ms per operation
-        assert results['avg_get_time_ms'] < 100
+        assert results["set_ops_per_sec"] > 50  # At least 50 ops/sec (relaxed for CI)
+        assert results["get_ops_per_sec"] > 30  # At least 30 ops/sec (relaxed for CI)
+        assert results["avg_set_time_ms"] < 100  # Less than 100ms per operation
+        assert results["avg_get_time_ms"] < 100
 
     @pytest.mark.performance
     async def test_concurrent_operations_benchmark(self):
@@ -279,14 +289,18 @@ class TestUvloopPerformance:
 
         # Run benchmark with smaller parameters for tests
         results = await benchmark.benchmark_concurrent_operations(
-            concurrent_tasks=10,
-            operations_per_task=10
+            concurrent_tasks=10, operations_per_task=10
         )
 
         # Verify results structure
         expected_keys = [
-            'total_ops_per_sec', 'avg_task_time', 'min_task_time',
-            'max_task_time', 'total_time', 'concurrent_tasks', 'operations_per_task'
+            "total_ops_per_sec",
+            "avg_task_time",
+            "min_task_time",
+            "max_task_time",
+            "total_time",
+            "concurrent_tasks",
+            "operations_per_task",
         ]
 
         for key in expected_keys:
@@ -302,9 +316,9 @@ class TestUvloopPerformance:
         print(f"Max task time: {results['max_task_time']:.3f}s")
 
         # Performance expectations
-        assert results['total_ops_per_sec'] > 50  # At least 50 ops/sec total
-        assert results['avg_task_time'] < 10  # Less than 10 seconds per task
-        assert results['max_task_time'] < 20  # No task takes more than 20 seconds
+        assert results["total_ops_per_sec"] > 50  # At least 50 ops/sec total
+        assert results["avg_task_time"] < 10  # Less than 10 seconds per task
+        assert results["max_task_time"] < 20  # No task takes more than 20 seconds
 
     @pytest.mark.performance
     async def test_pubsub_benchmark(self):
@@ -316,8 +330,12 @@ class TestUvloopPerformance:
 
         # Verify results structure
         expected_keys = [
-            'publish_ops_per_sec', 'total_ops_per_sec', 'avg_publish_time_ms',
-            'total_time', 'messages_sent', 'messages_received'
+            "publish_ops_per_sec",
+            "total_ops_per_sec",
+            "avg_publish_time_ms",
+            "total_time",
+            "messages_sent",
+            "messages_received",
         ]
 
         for key in expected_keys:
@@ -332,24 +350,26 @@ class TestUvloopPerformance:
         print(f"Average publish time: {results['avg_publish_time_ms']:.2f}ms")
 
         # Verify all messages were received
-        assert results['messages_sent'] == results['messages_received']
+        assert results["messages_sent"] == results["messages_received"]
 
         # Performance expectations
-        assert results['publish_ops_per_sec'] > 10  # At least 10 msgs/sec
-        assert results['avg_publish_time_ms'] < 1000  # Less than 1 second per message
+        assert results["publish_ops_per_sec"] > 10  # At least 10 msgs/sec
+        assert results["avg_publish_time_ms"] < 1000  # Less than 1 second per message
 
     async def test_event_loop_benchmark(self):
         """Test event loop benchmarking utility."""
-        results = await benchmark_current_policy(duration=0.1)  # Short benchmark for tests
+        results = await benchmark_current_policy(
+            duration=0.1
+        )  # Short benchmark for tests
 
         # Verify results structure
-        assert 'policy' in results
-        assert 'operations' in results
-        assert 'ops_per_second' in results
+        assert "policy" in results
+        assert "operations" in results
+        assert "ops_per_second" in results
 
         # Should have some performance data
-        assert results['operations'] > 0
-        assert results['ops_per_second'] > 0
+        assert results["operations"] > 0
+        assert results["ops_per_second"] > 0
 
         print("\\nEvent Loop Benchmark:")
         print(f"Policy: {results['policy']}")
@@ -364,7 +384,7 @@ class TestUvloopPerformance:
 
         # Get policy info to verify consistency
         info = get_policy_info()
-        expected_active = info.get('active_policy') == 'uvloop'
+        expected_active = info.get("active_policy") == "uvloop"
 
         assert is_active == expected_active
 
@@ -389,7 +409,7 @@ class TestUvloopIntegration:
             "bid": 50000.0,
             "ask": 50001.0,
             "last": 50000.5,
-            "volume": 1000.0
+            "volume": 1000.0,
         }
 
         # Benchmark mixed operations
@@ -411,14 +431,16 @@ class TestUvloopIntegration:
                     exchange_name="binance",
                     symbol=f"BTC{i}/USDT",
                     size=1.0,
-                    cost=50000.0
+                    cost=50000.0,
                 )
             except AttributeError:
                 # Method might not exist yet
                 pass
 
         total_time = time.perf_counter() - start_time
-        ops_per_second = (operations * 2) / total_time  # 2 operations per iteration (ticker + order)
+        ops_per_second = (
+            operations * 2
+        ) / total_time  # 2 operations per iteration (ticker + order)
 
         print("\\nFull Stack Performance:")
         print(f"Total operations: {operations * 2}")
@@ -487,14 +509,15 @@ def event_loop_manager():
 
 
 # Utility functions for performance analysis
-def compare_performance_results(asyncio_results: dict[str, float],
-                              uvloop_results: dict[str, float]) -> dict[str, float]:
+def compare_performance_results(
+    asyncio_results: dict[str, float], uvloop_results: dict[str, float]
+) -> dict[str, float]:
     """Compare performance results between asyncio and uvloop.
-    
+
     Args:
         asyncio_results: Benchmark results using asyncio
         uvloop_results: Benchmark results using uvloop
-        
+
     Returns:
         Dict with performance improvement ratios
     """
@@ -502,12 +525,16 @@ def compare_performance_results(asyncio_results: dict[str, float],
 
     for key in asyncio_results:
         if key in uvloop_results and asyncio_results[key] > 0:
-            if 'time' in key:
+            if "time" in key:
                 # For time metrics, lower is better
-                improvements[f"{key}_improvement"] = asyncio_results[key] / uvloop_results[key]
+                improvements[f"{key}_improvement"] = (
+                    asyncio_results[key] / uvloop_results[key]
+                )
             else:
                 # For rate metrics, higher is better
-                improvements[f"{key}_improvement"] = uvloop_results[key] / asyncio_results[key]
+                improvements[f"{key}_improvement"] = (
+                    uvloop_results[key] / asyncio_results[key]
+                )
 
     return improvements
 
@@ -539,13 +566,17 @@ if __name__ == "__main__":
         # Concurrent operations
         print("Running concurrent operations benchmark...")
         concurrent_results = await benchmark.benchmark_concurrent_operations(50, 50)
-        print(f"Concurrent throughput: {concurrent_results['total_ops_per_sec']:.0f} ops/sec")
+        print(
+            f"Concurrent throughput: {concurrent_results['total_ops_per_sec']:.0f} ops/sec"
+        )
         print()
 
         # Pub/sub
         print("Running pub/sub benchmark...")
         pubsub_results = await benchmark.benchmark_pubsub_performance(100)
-        print(f"Pub/sub throughput: {pubsub_results['publish_ops_per_sec']:.0f} msgs/sec")
+        print(
+            f"Pub/sub throughput: {pubsub_results['publish_ops_per_sec']:.0f} msgs/sec"
+        )
         print()
 
         print("Benchmarks complete!")

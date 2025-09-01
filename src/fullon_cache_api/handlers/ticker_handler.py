@@ -19,36 +19,78 @@ import json
 from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
-from fullon_log import get_component_logger  # type: ignore
 
 
-logger = get_component_logger("fullon.api.cache.tickers")
+def _safe_get_component_logger(name: str):
+    try:
+        from fullon_log import get_component_logger as _gcl  # type: ignore
+
+        return _gcl(name)
+    except Exception:  # pragma: no cover - environment dependent
+        import logging
+
+        class _KVLLoggerAdapter:
+            def __init__(self, base):
+                self._base = base
+
+            def _fmt(self, msg: str, **kwargs):
+                if kwargs:
+                    kv = " ".join(f"{k}={v}" for k, v in kwargs.items())
+                    return f"{msg} | {kv}"
+                return msg
+
+            def debug(self, msg, *args, **kwargs):
+                self._base.debug(self._fmt(msg, **kwargs), *args)
+
+            def info(self, msg, *args, **kwargs):
+                self._base.info(self._fmt(msg, **kwargs), *args)
+
+            def warning(self, msg, *args, **kwargs):
+                self._base.warning(self._fmt(msg, **kwargs), *args)
+
+            def error(self, msg, *args, **kwargs):
+                self._base.error(self._fmt(msg, **kwargs), *args)
+
+        return _KVLLoggerAdapter(logging.getLogger(name))
+
+
+logger = _safe_get_component_logger("fullon.api.cache.tickers")
 
 
 class TickerWebSocketHandler:
     def __init__(self) -> None:
         self.active_connections: dict[str, WebSocket] = {}
-        self.streaming_tasks: dict[str, asyncio.Task] = {}
+        self.streaming_tasks: dict[str, asyncio.Task[Any]] = {}
 
     async def handle_connection(self, websocket: WebSocket, connection_id: str) -> None:
         await websocket.accept()
         self.active_connections[connection_id] = websocket
-        logger.info("Ticker WebSocket connected", connection_id=connection_id, handler="tickers")
+        logger.info(
+            "Ticker WebSocket connected", connection_id=connection_id, handler="tickers"
+        )
 
         try:
             while True:
                 message = await websocket.receive_text()
                 await self.route_ticker_message(websocket, message, connection_id)
         except WebSocketDisconnect:
-            logger.info("Ticker WebSocket disconnected", connection_id=connection_id, handler="tickers")
+            logger.info(
+                "Ticker WebSocket disconnected",
+                connection_id=connection_id,
+                handler="tickers",
+            )
         finally:
             await self.cleanup_connection(connection_id)
 
-    async def route_ticker_message(self, websocket: WebSocket, message: str, connection_id: str) -> None:
+    async def route_ticker_message(
+        self, websocket: WebSocket, message: str, connection_id: str
+    ) -> None:
         try:
             data = json.loads(message)
         except json.JSONDecodeError:
-            await self.send_error(websocket, None, "MALFORMED_MESSAGE", "Malformed JSON message")
+            await self.send_error(
+                websocket, None, "MALFORMED_MESSAGE", "Malformed JSON message"
+            )
             return
 
         action = data.get("action")
@@ -58,9 +100,13 @@ class TickerWebSocketHandler:
         if action == "get_ticker":
             await self.handle_get_ticker(websocket, request_id, params, connection_id)
         elif action == "get_all_tickers":
-            await self.handle_get_all_tickers(websocket, request_id, params, connection_id)
+            await self.handle_get_all_tickers(
+                websocket, request_id, params, connection_id
+            )
         elif action == "stream_tickers":
-            await self.handle_stream_tickers(websocket, request_id, params, connection_id)
+            await self.handle_stream_tickers(
+                websocket, request_id, params, connection_id
+            )
         else:
             await self.send_error(
                 websocket,
@@ -69,7 +115,9 @@ class TickerWebSocketHandler:
                 f"Operation '{action}' not implemented",
             )
 
-    async def send_error(self, websocket: WebSocket, request_id: str | None, code: str, message: str) -> None:
+    async def send_error(
+        self, websocket: WebSocket, request_id: str | None, code: str, message: str
+    ) -> None:
         payload = {
             "request_id": request_id,
             "success": False,
@@ -78,12 +126,23 @@ class TickerWebSocketHandler:
         }
         await websocket.send_text(json.dumps(payload))
 
-    async def handle_get_ticker(self, websocket: WebSocket, request_id: str, params: dict[str, Any], connection_id: str) -> None:
+    async def handle_get_ticker(
+        self,
+        websocket: WebSocket,
+        request_id: str,
+        params: dict[str, Any],
+        connection_id: str,
+    ) -> None:
         exchange = params.get("exchange")
         symbol = params.get("symbol")
 
         if not exchange or not symbol:
-            await self.send_error(websocket, request_id, "INVALID_PARAMS", "exchange and symbol parameters required")
+            await self.send_error(
+                websocket,
+                request_id,
+                "INVALID_PARAMS",
+                "exchange and symbol parameters required",
+            )
             return
 
         logger.info(
@@ -108,7 +167,9 @@ class TickerWebSocketHandler:
                     "exchange": getattr(ticker, "exchange", exchange),
                     "price": float(getattr(ticker, "price", 0.0)),
                     "volume": float(getattr(ticker, "volume", 0.0)),
-                    "timestamp": float(getattr(ticker, "time", getattr(ticker, "timestamp", 0.0))),
+                    "timestamp": float(
+                        getattr(ticker, "time", getattr(ticker, "timestamp", 0.0))
+                    ),
                     "bid": float(getattr(ticker, "bid", 0.0)),
                     "ask": float(getattr(ticker, "ask", 0.0)),
                     "change_24h": float(getattr(ticker, "change_24h", 0.0)),
@@ -144,12 +205,22 @@ class TickerWebSocketHandler:
                 error=str(exc),
                 request_id=request_id,
             )
-            await self.send_error(websocket, request_id, "CACHE_ERROR", "Failed to retrieve ticker data")
+            await self.send_error(
+                websocket, request_id, "CACHE_ERROR", "Failed to retrieve ticker data"
+            )
 
-    async def handle_get_all_tickers(self, websocket: WebSocket, request_id: str, params: dict[str, Any], connection_id: str) -> None:
+    async def handle_get_all_tickers(
+        self,
+        websocket: WebSocket,
+        request_id: str,
+        params: dict[str, Any],
+        connection_id: str,
+    ) -> None:
         exchange = params.get("exchange")
         if not exchange:
-            await self.send_error(websocket, request_id, "INVALID_PARAMS", "exchange parameter required")
+            await self.send_error(
+                websocket, request_id, "INVALID_PARAMS", "exchange parameter required"
+            )
             return
 
         logger.info(
@@ -162,23 +233,38 @@ class TickerWebSocketHandler:
         try:
             from fullon_cache import TickCache  # type: ignore
 
-            async with TickCache() as cache:  # type: ignore[call-arg]
-                tickers = await cache.get_tickers(exchange)
-
             items: list[dict[str, Any]] = []
-            for t in tickers or []:
-                items.append(
-                    {
+            async with TickCache() as cache:  # type: ignore[call-arg]
+                # Prefer new API
+                get_all = getattr(cache, "get_all_tickers", None)
+                if callable(get_all):
+                    try:
+                        tickers = await get_all(exchange_name=exchange)  # type: ignore[misc]
+                    except TypeError:
+                        tickers = await get_all()  # type: ignore[misc]
+                else:
+                    # Legacy API: get all and filter
+                    get_any = getattr(cache, "get_tickers", None)
+                    tickers = await get_any() if callable(get_any) else []  # type: ignore[misc]
+
+                for t in tickers or []:
+                    ex_name = getattr(t, "exchange", getattr(t, "exchange_name", None))
+                    rec = {
                         "symbol": getattr(t, "symbol", None),
-                        "exchange": getattr(t, "exchange", exchange),
+                        "exchange": ex_name or exchange,
                         "price": float(getattr(t, "price", 0.0)),
                         "volume": float(getattr(t, "volume", 0.0)),
-                        "timestamp": float(getattr(t, "time", getattr(t, "timestamp", 0.0))),
+                        "timestamp": float(
+                            getattr(t, "time", getattr(t, "timestamp", 0.0))
+                        ),
                         "bid": float(getattr(t, "bid", 0.0)),
                         "ask": float(getattr(t, "ask", 0.0)),
                         "change_24h": float(getattr(t, "change_24h", 0.0)),
                     }
-                )
+                    items.append(rec)
+
+                # Filter by requested exchange if needed
+                items = [it for it in items if str(it.get("exchange")) == str(exchange)]
 
             response = {
                 "request_id": request_id,
@@ -194,18 +280,32 @@ class TickerWebSocketHandler:
                 error=str(exc),
                 request_id=request_id,
             )
-            await self.send_error(websocket, request_id, "CACHE_ERROR", "Failed to retrieve tickers")
+            await self.send_error(
+                websocket, request_id, "CACHE_ERROR", "Failed to retrieve tickers"
+            )
 
-    async def handle_stream_tickers(self, websocket: WebSocket, request_id: str, params: dict[str, Any], connection_id: str) -> None:
+    async def handle_stream_tickers(
+        self,
+        websocket: WebSocket,
+        request_id: str,
+        params: dict[str, Any],
+        connection_id: str,
+    ) -> None:
         exchange = params.get("exchange")
         symbols = params.get("symbols", [])
         if not exchange:
-            await self.send_error(websocket, request_id, "INVALID_PARAMS", "exchange parameter required")
+            await self.send_error(
+                websocket, request_id, "INVALID_PARAMS", "exchange parameter required"
+            )
             return
 
         stream_key = f"{connection_id}:{request_id}"
         try:
-            task = asyncio.create_task(self._stream_ticker_updates(websocket, request_id, exchange, symbols, stream_key))
+            task = asyncio.create_task(
+                self._stream_ticker_updates(
+                    websocket, request_id, exchange, symbols, stream_key
+                )
+            )
             self.streaming_tasks[stream_key] = task
 
             confirmation = {
@@ -217,10 +317,27 @@ class TickerWebSocketHandler:
             }
             await websocket.send_text(json.dumps(confirmation))
         except Exception as exc:  # pragma: no cover - env dependent
-            logger.error("Ticker streaming initialization failed", exchange=exchange, error=str(exc), stream_key=stream_key)
-            await self.send_error(websocket, request_id, "INTERNAL_ERROR", "Failed to start ticker streaming")
+            logger.error(
+                "Ticker streaming initialization failed",
+                exchange=exchange,
+                error=str(exc),
+                stream_key=stream_key,
+            )
+            await self.send_error(
+                websocket,
+                request_id,
+                "INTERNAL_ERROR",
+                "Failed to start ticker streaming",
+            )
 
-    async def _stream_ticker_updates(self, websocket: WebSocket, request_id: str, exchange: str, symbols: list[str], stream_key: str) -> None:
+    async def _stream_ticker_updates(
+        self,
+        websocket: WebSocket,
+        request_id: str,
+        exchange: str,
+        symbols: list[str],
+        stream_key: str,
+    ) -> None:
         try:
             from fullon_cache import TickCache  # type: ignore
 
@@ -238,7 +355,13 @@ class TickerWebSocketHandler:
                                 "symbol": getattr(update, "symbol", None),
                                 "price": float(getattr(update, "price", 0.0)),
                                 "volume": float(getattr(update, "volume", 0.0)),
-                                "timestamp": float(getattr(update, "time", getattr(update, "timestamp", 0.0))),
+                                "timestamp": float(
+                                    getattr(
+                                        update,
+                                        "time",
+                                        getattr(update, "timestamp", 0.0),
+                                    )
+                                ),
                                 "bid": float(getattr(update, "bid", 0.0)),
                                 "ask": float(getattr(update, "ask", 0.0)),
                                 "change_24h": float(getattr(update, "change_24h", 0.0)),
@@ -260,10 +383,16 @@ class TickerWebSocketHandler:
                                         "symbol": getattr(t, "symbol", symbol),
                                         "price": float(getattr(t, "price", 0.0)),
                                         "volume": float(getattr(t, "volume", 0.0)),
-                                        "timestamp": float(getattr(t, "time", getattr(t, "timestamp", 0.0))),
+                                        "timestamp": float(
+                                            getattr(
+                                                t, "time", getattr(t, "timestamp", 0.0)
+                                            )
+                                        ),
                                         "bid": float(getattr(t, "bid", 0.0)),
                                         "ask": float(getattr(t, "ask", 0.0)),
-                                        "change_24h": float(getattr(t, "change_24h", 0.0)),
+                                        "change_24h": float(
+                                            getattr(t, "change_24h", 0.0)
+                                        ),
                                     },
                                 }
                                 await websocket.send_text(json.dumps(msg))
@@ -271,14 +400,17 @@ class TickerWebSocketHandler:
         except asyncio.CancelledError:  # pragma: no cover - cancellation timing
             logger.info("Ticker streaming cancelled", stream_key=stream_key)
         except Exception as exc:  # pragma: no cover - env dependent
-            logger.error("Ticker streaming error", error=str(exc), stream_key=stream_key)
+            logger.error(
+                "Ticker streaming error", error=str(exc), stream_key=stream_key
+            )
 
     async def cleanup_connection(self, connection_id: str) -> None:
         # Cancel and remove all streaming tasks for this connection
-        to_cancel = [k for k in self.streaming_tasks.keys() if k.startswith(f"{connection_id}:")]
+        to_cancel = [
+            k for k in self.streaming_tasks.keys() if k.startswith(f"{connection_id}:")
+        ]
         for key in to_cancel:
             task = self.streaming_tasks.pop(key, None)
             if task and not task.done():
                 task.cancel()
         self.active_connections.pop(connection_id, None)
-

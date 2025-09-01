@@ -12,6 +12,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "websockets>=12.0",
     "fullon_cache @ git+ssh://git@github.com/ingmarAvocado/fullon_cache.git",
+    "pytest-xdist (>=3.8.0,<4.0.0)",
 ]
 
 [tool.poetry]
@@ -101,6 +102,10 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 asyncio_mode = "auto"
+markers = [
+    "integration: integration tests with real services",
+    "redis: tests requiring Redis backend",
+]
 
 [tool.coverage.run]
 source = ["src"]

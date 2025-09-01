@@ -9,11 +9,44 @@ import time
 from decimal import Decimal
 from typing import Any
 
-from fullon_log import get_component_logger
+
+def _safe_get_component_logger(name: str):
+    try:
+        from fullon_log import get_component_logger as _gcl  # type: ignore
+
+        return _gcl(name)
+    except Exception:  # pragma: no cover - environment dependent
+        import logging
+
+        class _KVLLoggerAdapter:
+            def __init__(self, base):
+                self._base = base
+
+            def _fmt(self, msg: str, **kwargs):
+                if kwargs:
+                    kv = " ".join(f"{k}={v}" for k, v in kwargs.items())
+                    return f"{msg} | {kv}"
+                return msg
+
+            def debug(self, msg, *args, **kwargs):
+                self._base.debug(self._fmt(msg, **kwargs), *args)
+
+            def info(self, msg, *args, **kwargs):
+                self._base.info(self._fmt(msg, **kwargs), *args)
+
+            def warning(self, msg, *args, **kwargs):
+                self._base.warning(self._fmt(msg, **kwargs), *args)
+
+            def error(self, msg, *args, **kwargs):
+                self._base.error(self._fmt(msg, **kwargs), *args)
+
+        return _KVLLoggerAdapter(logging.getLogger(name))
+
+
 from pydantic import BaseModel, Field, validator
 
 # Initialize component logger for data models
-logger = get_component_logger("fullon.api.cache.models.data")
+logger = _safe_get_component_logger("fullon.api.cache.models.data")
 
 
 class TickerData(BaseModel):

@@ -11,13 +11,13 @@ class OHLCVFactory:
 
     def create(self, **kwargs) -> list[float]:
         """Create a single OHLCV bar.
-        
+
         Args:
             **kwargs: Override any default values
-            
+
         Returns:
             List of [timestamp, open, high, low, close, volume]
-            
+
         Example:
             factory = OHLCVFactory()
             bar = factory.create(
@@ -29,18 +29,18 @@ class OHLCVFactory:
         self._counter += 1
 
         # Default values
-        timestamp = kwargs.get('timestamp', datetime.now(UTC).timestamp() * 1000)
-        open_price = kwargs.get('open', 50000.0)
-        high = kwargs.get('high')
-        low = kwargs.get('low')
-        close = kwargs.get('close', open_price + 10)
-        volume = kwargs.get('volume', 1000.0)
+        timestamp = kwargs.get("timestamp", datetime.now(UTC).timestamp() * 1000)
+        open_price = kwargs.get("open", 50000.0)
+        high = kwargs.get("high")
+        low = kwargs.get("low")
+        close = kwargs.get("close", open_price + 10)
+        volume = kwargs.get("volume", 1000.0)
 
         # Auto-calculate high/low if not provided
         if high is None:
             high = max(open_price, close) * 1.001  # 0.1% above max
         if low is None:
-            low = min(open_price, close) * 0.999   # 0.1% below min
+            low = min(open_price, close) * 0.999  # 0.1% below min
 
         # Ensure high/low bounds are correct
         high = max(high, open_price, close)
@@ -48,21 +48,23 @@ class OHLCVFactory:
 
         return [timestamp, open_price, high, low, close, volume]
 
-    def create_series(self,
-                     count: int = 100,
-                     timeframe: str = "1h",
-                     start_time: datetime | None = None,
-                     trend: str = "sideways",
-                     volatility: float = 0.02) -> list[list[float]]:
+    def create_series(
+        self,
+        count: int = 100,
+        timeframe: str = "1h",
+        start_time: datetime | None = None,
+        trend: str = "sideways",
+        volatility: float = 0.02,
+    ) -> list[list[float]]:
         """Create a series of OHLCV bars.
-        
+
         Args:
             count: Number of bars to create
             timeframe: Timeframe (1m, 5m, 15m, 30m, 1h, 4h, 1d)
             start_time: Starting timestamp
             trend: Market trend (up, down, sideways)
             volatility: Price volatility as percentage
-            
+
         Returns:
             List of OHLCV bars
         """
@@ -90,6 +92,7 @@ class OHLCVFactory:
 
             # Add some randomness
             import random
+
             random_factor = 1 + (random.random() - 0.5) * volatility
 
             # Calculate OHLC
@@ -119,13 +122,15 @@ class OHLCVFactory:
 
         return bars
 
-    def create_bullish_bar(self, open_price: float = 50000, gain_percent: float = 2.0) -> list[float]:
+    def create_bullish_bar(
+        self, open_price: float = 50000, gain_percent: float = 2.0
+    ) -> list[float]:
         """Create a bullish candlestick.
-        
+
         Args:
             open_price: Opening price
             gain_percent: Percentage gain
-            
+
         Returns:
             Bullish OHLCV bar
         """
@@ -138,16 +143,18 @@ class OHLCVFactory:
             high=high,
             low=low,
             close=close,
-            volume=2000  # Higher volume on bullish moves
+            volume=2000,  # Higher volume on bullish moves
         )
 
-    def create_bearish_bar(self, open_price: float = 50000, loss_percent: float = 2.0) -> list[float]:
+    def create_bearish_bar(
+        self, open_price: float = 50000, loss_percent: float = 2.0
+    ) -> list[float]:
         """Create a bearish candlestick.
-        
+
         Args:
             open_price: Opening price
             loss_percent: Percentage loss
-            
+
         Returns:
             Bearish OHLCV bar
         """
@@ -160,15 +167,15 @@ class OHLCVFactory:
             high=high,
             low=low,
             close=close,
-            volume=2500  # Higher volume on bearish moves
+            volume=2500,  # Higher volume on bearish moves
         )
 
     def create_doji(self, price: float = 50000) -> list[float]:
         """Create a doji candlestick (open = close).
-        
+
         Args:
             price: Price level
-            
+
         Returns:
             Doji OHLCV bar
         """
@@ -177,20 +184,19 @@ class OHLCVFactory:
             high=price * 1.005,
             low=price * 0.995,
             close=price,
-            volume=500  # Low volume on indecision
+            volume=500,  # Low volume on indecision
         )
 
-    def create_gap_series(self,
-                         count: int = 10,
-                         gap_percent: float = 1.0,
-                         timeframe: str = "1d") -> list[list[float]]:
+    def create_gap_series(
+        self, count: int = 10, gap_percent: float = 1.0, timeframe: str = "1d"
+    ) -> list[list[float]]:
         """Create OHLCV series with gaps between bars.
-        
+
         Args:
             count: Number of bars
             gap_percent: Gap size as percentage
             timeframe: Timeframe
-            
+
         Returns:
             List of OHLCV bars with gaps
         """
@@ -224,23 +230,19 @@ class OHLCVFactory:
 
     def _parse_timeframe(self, timeframe: str) -> int:
         """Parse timeframe string to minutes.
-        
+
         Args:
             timeframe: Timeframe string (1m, 5m, 1h, etc.)
-            
+
         Returns:
             Number of minutes
         """
-        multipliers = {
-            'm': 1,
-            'h': 60,
-            'd': 1440,
-            'w': 10080
-        }
+        multipliers = {"m": 1, "h": 60, "d": 1440, "w": 10080}
 
         # Extract number and unit
         import re
-        match = re.match(r'(\d+)([mhdw])', timeframe.lower())
+
+        match = re.match(r"(\d+)([mhdw])", timeframe.lower())
         if not match:
             raise ValueError(f"Invalid timeframe: {timeframe}")
 

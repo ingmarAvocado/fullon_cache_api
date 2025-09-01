@@ -4,10 +4,8 @@ import asyncio
 from unittest.mock import patch
 
 import pytest
-from redis.exceptions import RedisError
-
-from fullon_cache import BaseCache
 from fullon_cache.exceptions import CacheError, ConnectionError, PubSubError
+from redis.exceptions import RedisError
 
 
 class TestBaseCacheAdditionalCoverage:
@@ -31,7 +29,7 @@ class TestBaseCacheAdditionalCoverage:
         """Test scard with Redis error."""
         cache = base_cache
 
-        with patch('redis.asyncio.Redis.scard', side_effect=RedisError("Scard failed")):
+        with patch("redis.asyncio.Redis.scard", side_effect=RedisError("Scard failed")):
             with pytest.raises(CacheError) as exc_info:
                 await cache.scard("myset")
             assert "Failed to get set cardinality" in str(exc_info.value)
@@ -43,11 +41,12 @@ class TestBaseCacheAdditionalCoverage:
 
         # Use worker-specific keys with timestamp to avoid collisions
         import time
-        timestamp = str(time.time()).replace('.', '')
+
+        timestamp = str(time.time()).replace(".", "")
         key_prefix = f"test_{worker_id}_{timestamp}"
         keys_to_set = [f"{key_prefix}:1", f"{key_prefix}:2"]
         other_key = f"other_{worker_id}_{timestamp}:1"
-        
+
         try:
             # Set some keys with retry logic for parallel execution
             for attempt in range(3):
@@ -63,7 +62,7 @@ class TestBaseCacheAdditionalCoverage:
 
             # Wait a bit to ensure keys are saved
             await asyncio.sleep(0.05)
-            
+
             # Scan for keys with retry logic
             keys = []
             for attempt in range(3):
@@ -71,11 +70,11 @@ class TestBaseCacheAdditionalCoverage:
                     keys = []
                     async for key in cache.scan_iter(f"{key_prefix}:*"):
                         keys.append(key)
-                    
+
                     # If we got the expected keys, break
                     if len(keys) >= 2:
                         break
-                        
+
                 except Exception:
                     if attempt == 2:
                         raise
@@ -83,7 +82,7 @@ class TestBaseCacheAdditionalCoverage:
 
             # Should find both keys we set
             assert len(keys) >= 2, f"Expected at least 2 keys, got {len(keys)}: {keys}"
-            
+
         finally:
             # Cleanup
             try:
@@ -98,7 +97,10 @@ class TestBaseCacheAdditionalCoverage:
         cache = base_cache
 
         # Mock get_redis to raise error immediately
-        with patch('fullon_cache.base_cache.get_redis', side_effect=RedisError("Connection failed")):
+        with patch(
+            "fullon_cache.base_cache.get_redis",
+            side_effect=RedisError("Connection failed"),
+        ):
             with pytest.raises(PubSubError) as exc_info:
                 async for msg in cache.subscribe("channel1"):
                     pass  # Should not reach here
@@ -110,7 +112,9 @@ class TestBaseCacheAdditionalCoverage:
         cache = base_cache
 
         # Mock ping to raise RedisError
-        with patch('redis.asyncio.Redis.ping', side_effect=RedisError("Connection lost")):
+        with patch(
+            "redis.asyncio.Redis.ping", side_effect=RedisError("Connection lost")
+        ):
             with pytest.raises(ConnectionError) as exc_info:
                 await cache.ping()
             # The error comes from connection pool

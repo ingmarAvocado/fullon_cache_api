@@ -12,13 +12,13 @@ class TickerFactory:
 
     def create(self, **kwargs) -> dict[str, Any]:
         """Create ticker data with defaults.
-        
+
         Args:
             **kwargs: Override any default values
-            
+
         Returns:
             Dictionary with ticker data
-            
+
         Example:
             factory = TickerFactory()
             ticker = factory.create(
@@ -50,14 +50,16 @@ class TickerFactory:
 
         return result
 
-    def create_spread(self, base_price: float, spread_percent: float = 0.1, **kwargs) -> dict[str, Any]:
+    def create_spread(
+        self, base_price: float, spread_percent: float = 0.1, **kwargs
+    ) -> dict[str, Any]:
         """Create ticker with specific spread.
-        
+
         Args:
             base_price: Base price for bid/ask
             spread_percent: Spread as percentage (default 0.1%)
             **kwargs: Additional overrides
-            
+
         Returns:
             Ticker data dictionary
         """
@@ -65,21 +67,18 @@ class TickerFactory:
         bid = base_price - (spread / 2)
         ask = base_price + (spread / 2)
 
-        return self.create(
-            bid=bid,
-            ask=ask,
-            last=base_price,
-            **kwargs
-        )
+        return self.create(bid=bid, ask=ask, last=base_price, **kwargs)
 
-    def create_volatile(self, symbol: str = "BTC/USDT", volatility: float = 5.0, **kwargs) -> dict[str, Any]:
+    def create_volatile(
+        self, symbol: str = "BTC/USDT", volatility: float = 5.0, **kwargs
+    ) -> dict[str, Any]:
         """Create ticker with high volatility metrics.
-        
+
         Args:
             symbol: Trading symbol
             volatility: Volatility percentage
             **kwargs: Additional overrides
-            
+
         Returns:
             Ticker data dictionary
         """
@@ -96,35 +95,35 @@ class TickerFactory:
             high_24h=base_price + change,
             low_24h=base_price - change,
             volume=10000.0,  # High volume
-            **kwargs
+            **kwargs,
         )
 
     def create_stale(self, hours_old: int = 24, **kwargs) -> dict[str, Any]:
         """Create ticker with old timestamp.
-        
+
         Args:
             hours_old: How many hours old the ticker should be
             **kwargs: Additional overrides
-            
+
         Returns:
             Ticker data dictionary
         """
         from datetime import timedelta
+
         old_time = datetime.now(UTC) - timedelta(hours=hours_old)
 
-        return self.create(
-            timestamp=old_time.isoformat(),
-            **kwargs
-        )
+        return self.create(timestamp=old_time.isoformat(), **kwargs)
 
-    def create_batch(self, count: int, exchange: str = "binance", base_symbol: str = "TEST") -> list:
+    def create_batch(
+        self, count: int, exchange: str = "binance", base_symbol: str = "TEST"
+    ) -> list:
         """Create multiple tickers.
-        
+
         Args:
             count: Number of tickers to create
             exchange: Exchange name
             base_symbol: Base symbol prefix
-            
+
         Returns:
             List of ticker dictionaries
         """
@@ -135,7 +134,7 @@ class TickerFactory:
                 bid=50000.0 + (i * 100),
                 ask=50001.0 + (i * 100),
                 last=50000.5 + (i * 100),
-                volume=1000.0 + (i * 10)
+                volume=1000.0 + (i * 10),
             )
             tickers.append(ticker)
 
