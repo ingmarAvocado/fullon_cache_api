@@ -12,13 +12,13 @@ class OrderFactory:
 
     def create(self, **kwargs) -> dict[str, Any]:
         """Create order data with defaults.
-        
+
         Args:
             **kwargs: Override any default values
-            
+
         Returns:
             Dictionary with order data
-            
+
         Example:
             factory = OrderFactory()
             order = factory.create(
@@ -50,7 +50,7 @@ class OrderFactory:
             "leverage": None,
             "tick": None,
             "plimit": None,
-            "timestamp": timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
         }
 
         # Merge with provided kwargs
@@ -61,11 +61,11 @@ class OrderFactory:
 
     def create_market_order(self, side: str = "buy", **kwargs) -> dict[str, Any]:
         """Create a market order.
-        
+
         Args:
             side: Order side (buy/sell)
             **kwargs: Additional overrides
-            
+
         Returns:
             Market order data
         """
@@ -73,32 +73,30 @@ class OrderFactory:
             order_type="market",
             side=side,
             price=None,  # Market orders don't have price
-            **kwargs
+            **kwargs,
         )
 
     def create_stop_order(self, stop_price: float, **kwargs) -> dict[str, Any]:
         """Create a stop order.
-        
+
         Args:
             stop_price: Stop trigger price
             **kwargs: Additional overrides
-            
+
         Returns:
             Stop order data
         """
-        return self.create(
-            order_type="stop",
-            plimit=stop_price,
-            **kwargs
-        )
+        return self.create(order_type="stop", plimit=stop_price, **kwargs)
 
-    def create_filled_order(self, fill_percent: float = 100.0, **kwargs) -> dict[str, Any]:
+    def create_filled_order(
+        self, fill_percent: float = 100.0, **kwargs
+    ) -> dict[str, Any]:
         """Create a partially or fully filled order.
-        
+
         Args:
             fill_percent: Percentage filled (0-100)
             **kwargs: Additional overrides
-            
+
         Returns:
             Filled order data
         """
@@ -114,35 +112,35 @@ class OrderFactory:
 
         return order
 
-    def create_cancelled_order(self, reason: str = "User cancelled", **kwargs) -> dict[str, Any]:
+    def create_cancelled_order(
+        self, reason: str = "User cancelled", **kwargs
+    ) -> dict[str, Any]:
         """Create a cancelled order.
-        
+
         Args:
             reason: Cancellation reason
             **kwargs: Additional overrides
-            
+
         Returns:
             Cancelled order data
         """
-        return self.create(
-            status="cancelled",
-            reason=reason,
-            **kwargs
-        )
+        return self.create(status="cancelled", reason=reason, **kwargs)
 
-    def create_batch(self,
-                    count: int,
-                    exchange: str = "binance",
-                    symbol: str = "BTC/USDT",
-                    side_alternating: bool = True) -> list:
+    def create_batch(
+        self,
+        count: int,
+        exchange: str = "binance",
+        symbol: str = "BTC/USDT",
+        side_alternating: bool = True,
+    ) -> list:
         """Create multiple orders.
-        
+
         Args:
             count: Number of orders to create
             exchange: Exchange name
             symbol: Trading symbol
             side_alternating: Alternate between buy/sell
-            
+
         Returns:
             List of order dictionaries
         """
@@ -158,25 +156,27 @@ class OrderFactory:
                 volume=0.1 * (i + 1),
                 price=50000.0 + (i * 10),
                 uid=100 + (i % 10),
-                bot_id=1 + (i % 5)
+                bot_id=1 + (i % 5),
             )
             orders.append(order)
 
         return orders
 
-    def create_order_book_snapshot(self,
-                                  symbol: str = "BTC/USDT",
-                                  mid_price: float = 50000.0,
-                                  depth: int = 5,
-                                  spread: float = 10.0) -> tuple:
+    def create_order_book_snapshot(
+        self,
+        symbol: str = "BTC/USDT",
+        mid_price: float = 50000.0,
+        depth: int = 5,
+        spread: float = 10.0,
+    ) -> tuple:
         """Create matching buy and sell orders for order book.
-        
+
         Args:
             symbol: Trading symbol
             mid_price: Middle price
             depth: Number of orders on each side
             spread: Price spread between orders
-            
+
         Returns:
             Tuple of (buy_orders, sell_orders)
         """
@@ -189,7 +189,7 @@ class OrderFactory:
                 symbol=symbol,
                 side="buy",
                 price=mid_price - (i + 1) * spread,
-                volume=0.5 * (i + 1)
+                volume=0.5 * (i + 1),
             )
             buy_orders.append(buy_order)
 
@@ -198,7 +198,7 @@ class OrderFactory:
                 symbol=symbol,
                 side="sell",
                 price=mid_price + (i + 1) * spread,
-                volume=0.5 * (i + 1)
+                volume=0.5 * (i + 1),
             )
             sell_orders.append(sell_order)
 

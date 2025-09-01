@@ -10,22 +10,54 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Any, Callable, Awaitable, Dict
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from fullon_log import get_component_logger  # type: ignore
+
+
+def _safe_get_component_logger(name: str):
+    try:
+        from fullon_log import get_component_logger as _gcl  # type: ignore
+
+        return _gcl(name)
+    except Exception:  # pragma: no cover - environment dependent
+        import logging
+
+        class _KVLLoggerAdapter:
+            def __init__(self, base):
+                self._base = base
+
+            def _fmt(self, msg: str, **kwargs):
+                if kwargs:
+                    kv = " ".join(f"{k}={v}" for k, v in kwargs.items())
+                    return f"{msg} | {kv}"
+                return msg
+
+            def debug(self, msg, *args, **kwargs):
+                self._base.debug(self._fmt(msg, **kwargs), *args)
+
+            def info(self, msg, *args, **kwargs):
+                self._base.info(self._fmt(msg, **kwargs), *args)
+
+            def warning(self, msg, *args, **kwargs):
+                self._base.warning(self._fmt(msg, **kwargs), *args)
+
+            def error(self, msg, *args, **kwargs):
+                self._base.error(self._fmt(msg, **kwargs), *args)
+
+        return _KVLLoggerAdapter(logging.getLogger(name))
+
 
 from ..base import CacheHealthChecker
 from ..models import (
     CacheRequest,
+    ErrorCodes,
     create_error_response,
     create_success_response,
-    ErrorCodes,
-    ErrorMessage,
 )
 
-
-logger = get_component_logger("fullon.api.cache.websocket.gateway")
+logger = _safe_get_component_logger("fullon.api.cache.websocket.gateway")
 
 router = APIRouter()
 
@@ -48,9 +80,7 @@ async def _handle_health_check(request: CacheRequest) -> dict[str, Any]:
     ws = await checker.check_websocket_connectivity()
     cache = await checker.check_cache_connectivity()
     result = {"websocket": ws, "cache": cache}
-    return create_success_response(
-        request_id=request.request_id, result=result
-    ).dict()
+    return create_success_response(request_id=request.request_id, result=result).dict()
 
 
 async def _handle_not_implemented(request: CacheRequest) -> dict[str, Any]:
@@ -128,4 +158,3 @@ async def websocket_gateway(websocket: WebSocket) -> None:
 
     except WebSocketDisconnect:
         logger.info("WebSocket disconnected")
-

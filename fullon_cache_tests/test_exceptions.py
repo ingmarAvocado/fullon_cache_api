@@ -62,7 +62,7 @@ class TestConnectionError:
             "Redis connection failed",
             host="redis.example.com",
             port=6380,
-            original_error=original
+            original_error=original,
         )
         assert str(error) == "Redis connection failed"
         assert error.host == "redis.example.com"
@@ -103,9 +103,7 @@ class TestSerializationError:
     def test_full_attributes(self):
         """Test creating SerializationError with all attributes."""
         error = SerializationError(
-            "JSON encoding failed",
-            data_type="TickerData",
-            operation="serialize"
+            "JSON encoding failed", data_type="TickerData", operation="serialize"
         )
         assert str(error) == "JSON encoding failed"
         assert error.data_type == "TickerData"
@@ -134,7 +132,7 @@ class TestKeyNotFoundError:
             "namespace:key",
             "deep:nested:key:structure",
             "key_with_special_chars!@#",
-            ""  # empty key
+            "",  # empty key
         ]
 
         for key in keys:
@@ -212,9 +210,7 @@ class TestStreamError:
     def test_full_attributes(self):
         """Test creating StreamError with all attributes."""
         error = StreamError(
-            "Failed to add to stream",
-            stream_key="trades:pending",
-            operation="XADD"
+            "Failed to add to stream", stream_key="trades:pending", operation="XADD"
         )
         assert str(error) == "Failed to add to stream"
         assert error.stream_key == "trades:pending"
@@ -257,7 +253,7 @@ class TestPubSubError:
             "orders:filled",
             "system:alerts",
             "bot:status:changes",
-            "market:data:BTC/USDT"
+            "market:data:BTC/USDT",
         ]
 
         for channel in channels:
@@ -298,9 +294,7 @@ class TestLockError:
     def test_full_attributes(self):
         """Test creating LockError with all attributes."""
         error = LockError(
-            "Cannot acquire lock",
-            lock_key="exchange:kraken:lock",
-            holder="bot_456"
+            "Cannot acquire lock", lock_key="exchange:kraken:lock", holder="bot_456"
         )
         assert str(error) == "Cannot acquire lock"
         assert error.lock_key == "exchange:kraken:lock"
@@ -355,7 +349,7 @@ class TestExceptionHandling:
             ConfigurationError("config error"),
             StreamError("stream error"),
             PubSubError("pubsub error"),
-            LockError("lock error")
+            LockError("lock error"),
         ]
 
         for exc in exceptions:
@@ -365,8 +359,13 @@ class TestExceptionHandling:
                 assert isinstance(e, CacheError)
                 # Verify we caught the right exception
                 assert type(e).__name__ in [
-                    "ConnectionError", "SerializationError", "KeyNotFoundError",
-                    "ConfigurationError", "StreamError", "PubSubError", "LockError"
+                    "ConnectionError",
+                    "SerializationError",
+                    "KeyNotFoundError",
+                    "ConfigurationError",
+                    "StreamError",
+                    "PubSubError",
+                    "LockError",
                 ]
 
     def test_exception_chaining(self):
@@ -381,7 +380,7 @@ class TestExceptionHandling:
                     "Failed to connect to Redis",
                     host="redis.example.com",
                     port=6379,
-                    original_error=original
+                    original_error=original,
                 ) from original
         except ConnectionError as e:
             assert e.original_error is not None
@@ -397,7 +396,7 @@ class TestExceptionHandling:
             raise SerializationError(
                 "Cannot serialize object",
                 data_type=str(type(data)),
-                operation="serialize"
+                operation="serialize",
             )
         except SerializationError as e:
             assert "dict" in e.data_type
@@ -408,7 +407,7 @@ class TestExceptionHandling:
             raise StreamError(
                 "Stream trimming failed",
                 stream_key="orders:completed",
-                operation="XTRIM"
+                operation="XTRIM",
             )
         except StreamError as e:
             assert e.stream_key == "orders:completed"
@@ -470,9 +469,7 @@ class TestExceptionUsagePatterns:
                 attempts.append(i)
                 if i < max_retries - 1:
                     raise ConnectionError(
-                        f"Attempt {i+1} failed",
-                        host="localhost",
-                        port=6379
+                        f"Attempt {i+1} failed", host="localhost", port=6379
                     )
                 # Success on last attempt
                 break

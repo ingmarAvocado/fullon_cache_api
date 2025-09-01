@@ -20,6 +20,40 @@ LOGGING: fullon_log Integration
 - Production-ready with 10,000+ logs/second performance
 """
 
+# Load environment configuration early so downstream libs (fullon_cache, fullon_log)
+# see CACHE_* variables from .env without tests wiring them explicitly.
+try:  # pragma: no cover - environment dependent
+    from dotenv import load_dotenv  # type: ignore
+
+    load_dotenv()
+except Exception:
+    # If python-dotenv is unavailable or .env missing, continue silently.
+    pass
+
+# Map CACHE_* variables to REDIS_* for compatibility with fullon_cache
+try:  # pragma: no cover - environment dependent
+    import os
+
+    mappings = {
+        "REDIS_HOST": ("CACHE_HOST", "localhost"),
+        "REDIS_PORT": ("CACHE_PORT", "6379"),
+        "REDIS_DB": ("CACHE_DB", "0"),
+        "REDIS_USER": ("CACHE_USER", None),
+        "REDIS_PASSWORD": ("CACHE_PASSWORD", None),
+        "REDIS_TIMEOUT": ("CACHE_TIMEOUT", "30"),
+    }
+    for target, (source, default) in mappings.items():
+        if os.environ.get(target):
+            continue
+        val = os.environ.get(source, default)
+        # Treat textual 'None'/'null' as unset to avoid bad auth
+        if isinstance(val, str) and val.strip().lower() in {"none", "null", ""}:
+            continue
+        if val is not None:
+            os.environ[target] = str(val)
+except Exception:
+    pass
+
 __version__ = "0.1.0"
 
 # Pydantic models for FastAPI WebSocket operations

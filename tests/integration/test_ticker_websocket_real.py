@@ -4,10 +4,8 @@ import json
 import uuid
 
 import pytest
-from starlette.testclient import TestClient
-
 from fullon_cache_api.main import create_app
-
+from starlette.testclient import TestClient
 
 pytestmark = [pytest.mark.integration, pytest.mark.redis]
 
@@ -39,7 +37,10 @@ def test_ticker_not_found_real_redis():
         request = {
             "action": "get_ticker",
             "request_id": "not_found",
-            "params": {"exchange": "binance", "symbol": f"NONEXISTENT/{uuid.uuid4().hex[:6]}"},
+            "params": {
+                "exchange": "binance",
+                "symbol": f"NONEXISTENT/{uuid.uuid4().hex[:6]}",
+            },
         }
         ws.send_text(json.dumps(request))
         response = json.loads(ws.receive_text())
@@ -97,4 +98,3 @@ def test_get_ticker_real_redis():
         assert response["success"] is True
         assert response["result"]["symbol"] == symbol
         assert response["result"]["exchange"] == exchange
-

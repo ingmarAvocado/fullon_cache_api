@@ -14,13 +14,13 @@ class ProcessFactory:
 
     def create(self, **kwargs) -> dict[str, Any]:
         """Create process data with defaults.
-        
+
         Args:
             **kwargs: Override any default values
-            
+
         Returns:
             Dictionary with process data
-            
+
         Example:
             factory = ProcessFactory()
             process = factory.create(
@@ -50,19 +50,21 @@ class ProcessFactory:
 
         return result
 
-    def create_bot_process(self,
-                          bot_name: str,
-                          symbol: str = "BTC/USDT",
-                          exchange: str = "binance",
-                          **kwargs) -> dict[str, Any]:
+    def create_bot_process(
+        self,
+        bot_name: str,
+        symbol: str = "BTC/USDT",
+        exchange: str = "binance",
+        **kwargs,
+    ) -> dict[str, Any]:
         """Create a bot process.
-        
+
         Args:
             bot_name: Name of the bot
             symbol: Trading symbol
             exchange: Exchange name
             **kwargs: Additional overrides
-            
+
         Returns:
             Bot process data
         """
@@ -73,23 +75,22 @@ class ProcessFactory:
                 "symbol": symbol,
                 "exchange": exchange,
                 "strategy": kwargs.pop("strategy", "grid"),
-                "active": True
+                "active": True,
             },
             message=f"Bot {bot_name} started on {exchange}:{symbol}",
-            **kwargs
+            **kwargs,
         )
 
-    def create_crawler_process(self,
-                              crawler_type: str = "tick",
-                              exchanges: list = None,
-                              **kwargs) -> dict[str, Any]:
+    def create_crawler_process(
+        self, crawler_type: str = "tick", exchanges: list = None, **kwargs
+    ) -> dict[str, Any]:
         """Create a crawler process.
-        
+
         Args:
             crawler_type: Type of crawler (tick, ohlcv, etc.)
             exchanges: List of exchanges to crawl
             **kwargs: Additional overrides
-            
+
         Returns:
             Crawler process data
         """
@@ -103,21 +104,19 @@ class ProcessFactory:
                 "crawler_type": crawler_type,
                 "exchanges": exchanges,
                 "interval": kwargs.pop("interval", 1),
-                "symbols": kwargs.pop("symbols", ["BTC/USDT", "ETH/USDT"])
+                "symbols": kwargs.pop("symbols", ["BTC/USDT", "ETH/USDT"]),
             },
             message=f"Crawler {crawler_type} monitoring {len(exchanges)} exchanges",
-            **kwargs
+            **kwargs,
         )
 
-    def create_service_process(self,
-                              service_type: str,
-                              **kwargs) -> dict[str, Any]:
+    def create_service_process(self, service_type: str, **kwargs) -> dict[str, Any]:
         """Create a service process.
-        
+
         Args:
             service_type: Type of service
             **kwargs: Additional overrides
-            
+
         Returns:
             Service process data
         """
@@ -128,7 +127,9 @@ class ProcessFactory:
             "order": ProcessType.ORDER,
         }
 
-        process_type = process_type_map.get(service_type, ProcessType.BOT_STATUS_SERVICE)
+        process_type = process_type_map.get(
+            service_type, ProcessType.BOT_STATUS_SERVICE
+        )
 
         return self.create(
             process_type=process_type,
@@ -136,21 +137,21 @@ class ProcessFactory:
             params={
                 "service_type": service_type,
                 "workers": kwargs.pop("workers", 4),
-                "batch_size": kwargs.pop("batch_size", 100)
+                "batch_size": kwargs.pop("batch_size", 100),
             },
             message=f"{service_type} service initialized",
-            **kwargs
+            **kwargs,
         )
 
-    def create_error_process(self,
-                            error_message: str = "Process encountered an error",
-                            **kwargs) -> dict[str, Any]:
+    def create_error_process(
+        self, error_message: str = "Process encountered an error", **kwargs
+    ) -> dict[str, Any]:
         """Create a process in error state.
-        
+
         Args:
             error_message: Error message
             **kwargs: Additional overrides
-            
+
         Returns:
             Error process data
         """
@@ -160,45 +161,42 @@ class ProcessFactory:
             params={
                 "error": True,
                 "error_time": datetime.now(UTC).isoformat(),
-                "error_details": kwargs.pop("error_details", "Test error")
+                "error_details": kwargs.pop("error_details", "Test error"),
             },
-            **kwargs
+            **kwargs,
         )
 
     def create_stale_process(self, minutes_old: int = 60, **kwargs) -> dict[str, Any]:
         """Create a stale process.
-        
+
         Args:
             minutes_old: How many minutes old the process should be
             **kwargs: Additional overrides
-            
+
         Returns:
             Stale process data
         """
         from datetime import timedelta
+
         old_time = datetime.now(UTC) - timedelta(minutes=minutes_old)
 
         return self.create(
             status=ProcessStatus.IDLE,
             message="Process is stale",
-            params={
-                "last_heartbeat": old_time.isoformat(),
-                "stale": True
-            },
-            **kwargs
+            params={"last_heartbeat": old_time.isoformat(), "stale": True},
+            **kwargs,
         )
 
-    def create_batch(self,
-                    count: int,
-                    process_types: list = None,
-                    statuses: list = None) -> list:
+    def create_batch(
+        self, count: int, process_types: list = None, statuses: list = None
+    ) -> list:
         """Create multiple processes.
-        
+
         Args:
             count: Number of processes to create
             process_types: List of process types to cycle through
             statuses: List of statuses to cycle through
-            
+
         Returns:
             List of process dictionaries
         """
@@ -206,7 +204,11 @@ class ProcessFactory:
             process_types = [ProcessType.BOT, ProcessType.CRAWLER, ProcessType.ORDER]
 
         if statuses is None:
-            statuses = [ProcessStatus.RUNNING, ProcessStatus.IDLE, ProcessStatus.PROCESSING]
+            statuses = [
+                ProcessStatus.RUNNING,
+                ProcessStatus.IDLE,
+                ProcessStatus.PROCESSING,
+            ]
 
         processes = []
 
@@ -218,11 +220,8 @@ class ProcessFactory:
                 process_type=process_type,
                 component=f"{process_type.value}_component_{i}",
                 status=status,
-                params={
-                    "index": i,
-                    "batch": True
-                },
-                message=f"Batch process {i} of {count}"
+                params={"index": i, "batch": True},
+                message=f"Batch process {i} of {count}",
             )
             processes.append(process)
 

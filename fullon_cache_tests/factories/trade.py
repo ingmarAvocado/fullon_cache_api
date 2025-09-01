@@ -29,24 +29,24 @@ class TradeFactory:
 
     def create(self, as_orm: bool = False, **kwargs) -> dict[str, Any] | Trade:
         """Create trade data with defaults.
-        
+
         Args:
             as_orm: If True, return ORM Trade object instead of dict
             **kwargs: Override any default values
-            
+
         Returns:
             Dictionary with trade data or Trade object
-            
+
         Example:
             factory = TradeFactory()
-            
+
             # Get as dictionary
             trade_dict = factory.create(
                 symbol="ETH/USDT",
                 amount=1.0,
                 price=3000.0
             )
-            
+
             # Get as ORM object
             trade_obj = factory.create(
                 as_orm=True,
@@ -75,7 +75,7 @@ class TradeFactory:
             "timestamp": timestamp.isoformat(),
             "exchange_trade_id": f"EX{self._counter}",
             "is_maker": False,
-            "metadata": {}
+            "metadata": {},
         }
 
         # Merge with provided kwargs
@@ -96,28 +96,26 @@ class TradeFactory:
 
         return result
 
-    def create_sell_trade(self, as_orm: bool = False, **kwargs) -> dict[str, Any] | Trade:
+    def create_sell_trade(
+        self, as_orm: bool = False, **kwargs
+    ) -> dict[str, Any] | Trade:
         """Create a sell trade.
-        
+
         Args:
             as_orm: If True, return ORM Trade object
             **kwargs: Additional overrides
-            
+
         Returns:
             Sell trade data or Trade object
         """
-        return self.create(
-            as_orm=as_orm,
-            side="sell",
-            **kwargs
-        )
+        return self.create(as_orm=as_orm, side="sell", **kwargs)
 
     def create_futures_trade(self, **kwargs) -> dict[str, Any]:
         """Create a futures trade.
-        
+
         Args:
             **kwargs: Additional overrides
-            
+
         Returns:
             Futures trade data
         """
@@ -125,22 +123,19 @@ class TradeFactory:
             trade_type=TradeType.FUTURES.value,
             symbol=kwargs.pop("symbol", "BTC-PERP"),
             fee_currency="USD",
-            **kwargs
+            **kwargs,
         )
 
     def create_maker_trade(self, **kwargs) -> dict[str, Any]:
         """Create a maker trade with lower fees.
-        
+
         Args:
             **kwargs: Additional overrides
-            
+
         Returns:
             Maker trade data
         """
-        trade = self.create(
-            is_maker=True,
-            **kwargs
-        )
+        trade = self.create(is_maker=True, **kwargs)
 
         # Maker fee is typically lower
         if "fee" not in kwargs:
@@ -148,21 +143,23 @@ class TradeFactory:
 
         return trade
 
-    def create_batch_trades(self,
-                           count: int,
-                           symbol: str = "BTC/USDT",
-                           user_id: int = 123,
-                           price_range: tuple = (49000, 51000),
-                           **kwargs) -> list:
+    def create_batch_trades(
+        self,
+        count: int,
+        symbol: str = "BTC/USDT",
+        user_id: int = 123,
+        price_range: tuple = (49000, 51000),
+        **kwargs,
+    ) -> list:
         """Create multiple trades for analysis.
-        
+
         Args:
             count: Number of trades to create
             symbol: Trading symbol
             user_id: User ID
             price_range: Tuple of (min_price, max_price)
             **kwargs: Additional overrides
-            
+
         Returns:
             List of trade dictionaries
         """
@@ -180,29 +177,32 @@ class TradeFactory:
                 user_id=user_id,
                 price=price,
                 amount=0.1 + (i * 0.01),
-                **kwargs
+                **kwargs,
             )
             trades.append(trade)
 
         return trades
 
-    def create_trade_history(self,
-                            user_id: int,
-                            symbol: str = "BTC/USDT",
-                            days: int = 7,
-                            trades_per_day: int = 10) -> list:
+    def create_trade_history(
+        self,
+        user_id: int,
+        symbol: str = "BTC/USDT",
+        days: int = 7,
+        trades_per_day: int = 10,
+    ) -> list:
         """Create historical trades for a user.
-        
+
         Args:
             user_id: User ID
             symbol: Trading symbol
             days: Number of days of history
             trades_per_day: Average trades per day
-            
+
         Returns:
             List of historical trade dictionaries
         """
         from datetime import timedelta
+
         trades = []
 
         for day in range(days):
@@ -212,12 +212,12 @@ class TradeFactory:
                 # Add some randomness to timestamps
                 trade_time = day_timestamp + timedelta(
                     hours=i * (24 / trades_per_day),
-                    minutes=(i * 17) % 60  # Some pseudo-randomness
+                    minutes=(i * 17) % 60,  # Some pseudo-randomness
                 )
 
                 # Vary price throughout the day
                 base_price = 50000 + (day * 100)  # Trend over days
-                daily_variation = (i - trades_per_day/2) * 10  # Daily variation
+                daily_variation = (i - trades_per_day / 2) * 10  # Daily variation
                 price = base_price + daily_variation
 
                 trade = self.create(
@@ -226,23 +226,25 @@ class TradeFactory:
                     timestamp=trade_time.isoformat(),
                     price=price,
                     amount=0.1 + (i % 5) * 0.05,
-                    side="buy" if i % 3 != 0 else "sell"
+                    side="buy" if i % 3 != 0 else "sell",
                 )
                 trades.append(trade)
 
         return trades
 
-    def create_arbitrage_trades(self,
-                               symbol: str = "BTC/USDT",
-                               exchanges: list = None,
-                               price_difference: float = 10.0) -> list:
+    def create_arbitrage_trades(
+        self,
+        symbol: str = "BTC/USDT",
+        exchanges: list = None,
+        price_difference: float = 10.0,
+    ) -> list:
         """Create trades for arbitrage testing.
-        
+
         Args:
             symbol: Trading symbol
             exchanges: List of exchanges
             price_difference: Price difference between exchanges
-            
+
         Returns:
             List of trades showing arbitrage opportunity
         """
@@ -260,8 +262,8 @@ class TradeFactory:
             exchange=exchanges[0],
             symbol=symbol,
             side="buy",
-            price=base_price - price_difference/2,
-            amount=1.0
+            price=base_price - price_difference / 2,
+            amount=1.0,
         )
         trades.append(buy_trade)
 
@@ -270,9 +272,9 @@ class TradeFactory:
             exchange=exchanges[1],
             symbol=symbol,
             side="sell",
-            price=base_price + price_difference/2,
+            price=base_price + price_difference / 2,
             amount=1.0,
-            timestamp=buy_trade["timestamp"]  # Same time
+            timestamp=buy_trade["timestamp"],  # Same time
         )
         trades.append(sell_trade)
 

@@ -12,7 +12,7 @@ Design constraints:
 """
 
 from collections.abc import AsyncGenerator
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 from fullon_log import get_component_logger  # type: ignore
 
@@ -23,10 +23,20 @@ logger = get_component_logger("fullon.api.cache.dependencies")
 if TYPE_CHECKING:  # type hints without importing at runtime
     from fullon_cache import (  # pragma: no cover - type checking only
         AccountCache as _AccountCache,
+    )
+    from fullon_cache import (
         BotCache as _BotCache,
+    )
+    from fullon_cache import (
         OHLCVCache as _OHLCVCache,
+    )
+    from fullon_cache import (
         OrdersCache as _OrdersCache,
+    )
+    from fullon_cache import (
         TickCache as _TickCache,
+    )
+    from fullon_cache import (
         TradesCache as _TradesCache,
     )
 

@@ -1,12 +1,9 @@
 """Comprehensive tests for simplified AccountCache."""
 
-import json
 
 import pytest
-from fullon_orm.models import Position
-
 from fullon_cache import AccountCache
-from fullon_cache.exceptions import ConnectionError
+from fullon_orm.models import Position
 
 
 class TestAccountCacheCore:
@@ -22,7 +19,7 @@ class TestAccountCacheCore:
     async def test_upsert_positions_basic(self, account_cache):
         """Test basic position upsert."""
         from fullon_orm.models import Position
-        
+
         positions = [
             Position(
                 symbol="BTC/USD",
@@ -31,7 +28,7 @@ class TestAccountCacheCore:
                 fee=10.0,
                 price=50000.0,
                 timestamp=1704067200.0,  # 2024-01-01 00:00:00 UTC
-                ex_id="123"
+                ex_id="123",
             )
         ]
 
@@ -48,7 +45,7 @@ class TestAccountCacheCore:
     async def test_upsert_positions_empty_deletes(self, account_cache):
         """Test that empty positions list deletes data."""
         from fullon_orm.models import Position
-        
+
         # First add some positions
         positions = [
             Position(
@@ -58,7 +55,7 @@ class TestAccountCacheCore:
                 fee=10.0,
                 price=50000.0,
                 timestamp=1704067200.0,
-                ex_id="456"
+                ex_id="456",
             )
         ]
         await account_cache.upsert_positions(456, positions)
@@ -75,7 +72,7 @@ class TestAccountCacheCore:
     async def test_upsert_positions_update_date_only(self, account_cache):
         """Test updating only timestamp."""
         from fullon_orm.models import Position
-        
+
         # First add positions
         positions = [
             Position(
@@ -85,7 +82,7 @@ class TestAccountCacheCore:
                 fee=5.0,
                 price=3000.0,
                 timestamp=1704067200.0,
-                ex_id="789"
+                ex_id="789",
             )
         ]
         await account_cache.upsert_positions(789, positions)
@@ -109,12 +106,7 @@ class TestAccountCacheCore:
     async def test_upsert_positions_invalid_input(self, account_cache):
         """Test with invalid input (not list of Position objects)."""
         # Pass a dict instead of list of Position objects
-        invalid_positions = {
-            "BTC/USD": {
-                "cost": 50000.0,
-                "volume": 1.0
-            }
-        }
+        invalid_positions = {"BTC/USD": {"cost": 50000.0, "volume": 1.0}}
 
         result = await account_cache.upsert_positions(111, invalid_positions)
         assert result is False  # Should return False for invalid input
@@ -144,7 +136,7 @@ class TestAccountCacheAccounts:
         """Test basic account upsert."""
         account_data = {
             "USDT": {"balance": 10000.0, "available": 8000.0},
-            "BTC": {"balance": 0.5, "available": 0.4}
+            "BTC": {"balance": 0.5, "available": 0.4},
         }
 
         result = await account_cache.upsert_user_account(123, account_data)
@@ -203,7 +195,7 @@ class TestAccountCacheRetrieval:
     async def test_get_position_existing(self, account_cache):
         """Test getting existing position."""
         from fullon_orm.models import Position
-        
+
         positions = [
             Position(
                 symbol="BTC/USD",
@@ -212,7 +204,7 @@ class TestAccountCacheRetrieval:
                 fee=5.0,
                 price=50000.0,
                 timestamp=1704067200.0,
-                ex_id="123"
+                ex_id="123",
             )
         ]
         await account_cache.upsert_positions(123, positions)
@@ -251,7 +243,7 @@ class TestAccountCacheRetrieval:
                 fee=1.0,
                 price=1000.0,
                 timestamp=1704067200.0,
-                ex_id="123"
+                ex_id="123",
             )
         ]
         await account_cache.upsert_positions(123, positions)
@@ -276,7 +268,7 @@ class TestAccountCacheRetrieval:
                 fee=10.0,
                 price=50000.0,
                 timestamp=1704067200.0,
-                ex_id="123"
+                ex_id="123",
             ),
             Position(
                 symbol="ETH/USD",
@@ -285,8 +277,8 @@ class TestAccountCacheRetrieval:
                 fee=5.0,
                 price=3000.0,
                 timestamp=1704067200.0,
-                ex_id="123"
-            )
+                ex_id="123",
+            ),
         ]
         positions2 = [
             Position(
@@ -296,7 +288,7 @@ class TestAccountCacheRetrieval:
                 fee=8.0,
                 price=45000.0,
                 timestamp=1704067200.0,
-                ex_id="456"
+                ex_id="456",
             )
         ]
 
@@ -334,7 +326,7 @@ class TestAccountCacheRetrieval:
                 fee=1.0,
                 price=1000.0,
                 timestamp=1704067200.0,
-                ex_id="123"
+                ex_id="123",
             )
         ]
         await account_cache.upsert_positions(123, positions)
@@ -350,7 +342,7 @@ class TestAccountCacheRetrieval:
         """Test getting account data for currency."""
         account_data = {
             "USDT": {"balance": 10000.0, "available": 8000.0},
-            "BTC": {"balance": 0.5, "available": 0.4}
+            "BTC": {"balance": 0.5, "available": 0.4},
         }
         await account_cache.upsert_user_account(789, account_data)
 
@@ -421,7 +413,7 @@ class TestAccountCacheUtility:
                 fee=1.0,
                 price=1000.0,
                 timestamp=1704067200.0,
-                ex_id="123"
+                ex_id="123",
             )
         ]
         await account_cache.upsert_positions(123, positions)
@@ -444,11 +436,10 @@ class TestAccountCacheUtility:
         # Test clean_positions under normal conditions
         # Add some data first
         await account_cache.upsert_user_account(123, {"USD": {"balance": 1000}})
-        
+
         # Clean should work normally
         deleted = await account_cache.clean_positions()
         assert deleted >= 0  # Should return number of deleted keys
-
 
 
 class TestAccountCacheEdgeCases:
@@ -458,20 +449,27 @@ class TestAccountCacheEdgeCases:
     async def test_mixed_type_ex_id(self, account_cache):
         """Test handling of both int and str ex_id."""
         # Use int ex_id
-        await account_cache.upsert_positions(123, [Position(
-            symbol="BTC/USD",
-            cost=1000.0,
-            volume=1.0,
-            fee=1.0,
-            price=1000.0,
-            timestamp=1704067200.0,
-            ex_id="123"
-        )])
+        await account_cache.upsert_positions(
+            123,
+            [
+                Position(
+                    symbol="BTC/USD",
+                    cost=1000.0,
+                    volume=1.0,
+                    fee=1.0,
+                    price=1000.0,
+                    timestamp=1704067200.0,
+                    ex_id="123",
+                )
+            ],
+        )
         position1 = await account_cache.get_position("BTC/USD", "123")
         assert position1.volume == 1.0
 
         # Use str ex_id
-        position2 = await account_cache.get_position("BTC/USD", 123)  # int passed to get
+        position2 = await account_cache.get_position(
+            "BTC/USD", 123
+        )  # int passed to get
         assert position2.volume == 1.0
 
     @pytest.mark.asyncio
@@ -497,7 +495,7 @@ class TestAccountCacheEdgeCases:
                 fee=1.0,
                 price=1000.0,
                 timestamp=1704067200.0,
-                ex_id="123"
+                ex_id="123",
             )
         ]
 
@@ -521,7 +519,7 @@ class TestAccountCacheEdgeCases:
                     fee=1.0,
                     price=1000.0,
                     timestamp=1704067200.0,
-                    ex_id=str(ex_id)
+                    ex_id=str(ex_id),
                 )
             ]
             return await account_cache.upsert_positions(ex_id, positions)
@@ -531,7 +529,7 @@ class TestAccountCacheEdgeCases:
             update_position("BTC/USD", 1),
             update_position("ETH/USD", 2),
             update_position("XRP/USD", 3),
-            return_exceptions=True
+            return_exceptions=True,
         )
 
         # All should succeed

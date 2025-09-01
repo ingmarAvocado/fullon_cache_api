@@ -58,7 +58,7 @@ class TestOHLCVCache:
         """Test update_ohlcv_bars handles errors gracefully."""
         bars = [[1234567890, 50000, 50100, 49900, 50050, 1234.56]]
 
-        with patch.object(ohlcv_cache._cache, 'rpush') as mock_rpush:
+        with patch.object(ohlcv_cache._cache, "rpush") as mock_rpush:
             mock_rpush.side_effect = Exception("Redis error")
 
             # Should not raise exception
@@ -70,13 +70,13 @@ class TestOHLCVCache:
         bars = []
         successful_batches = 0
         total_batches = 100
-        
+
         for i in range(total_batches):  # Add in batches to test trimming
             batch = []
             for j in range(110):
                 timestamp = 1234567890 + (i * 110 + j) * 60
                 batch.append([timestamp, 50000, 50100, 49900, 50050, 1000])
-            
+
             # Retry each batch under parallel stress
             for attempt in range(3):
                 try:
@@ -89,24 +89,32 @@ class TestOHLCVCache:
 
         # Under parallel stress, accept degraded performance
         retrieved = await ohlcv_cache.get_latest_ohlcv_bars("BTCUSD", "1m", 11000)
-        
+
         # We expect some data loss under parallel stress
         # Minimum expectation: at least 10% of intended data (more realistic for CI/parallel testing)
         min_expected = 1000  # 10% of 10000 - more realistic for parallel stress
         max_expected = 10000  # Ideal case
-        
-        assert len(retrieved) >= min_expected, f"Too few bars retrieved: {len(retrieved)} (expected at least {min_expected})"
-        assert len(retrieved) <= max_expected, f"Too many bars: {len(retrieved)} (should not exceed {max_expected})"
-        
+
+        assert (
+            len(retrieved) >= min_expected
+        ), f"Too few bars retrieved: {len(retrieved)} (expected at least {min_expected})"
+        assert (
+            len(retrieved) <= max_expected
+        ), f"Too many bars: {len(retrieved)} (should not exceed {max_expected})"
+
         # If we got less than expected, log it as a performance warning
         if len(retrieved) < 8000:  # Less than 80% of expected
-            print(f"WARNING: Retrieved only {len(retrieved)}/10000 bars under parallel stress ({successful_batches}/{total_batches} batches successful)")
+            print(
+                f"WARNING: Retrieved only {len(retrieved)}/10000 bars under parallel stress ({successful_batches}/{total_batches} batches successful)"
+            )
 
         # Verify we have valid timestamp ordering if we got any data
         if len(retrieved) > 1:
             first_timestamp = retrieved[0][0]
             last_timestamp = retrieved[-1][0]
-            assert last_timestamp > first_timestamp, "Timestamps should be in ascending order"
+            assert (
+                last_timestamp > first_timestamp
+            ), "Timestamps should be in ascending order"
 
     async def test_get_latest_ohlcv_bars_success(self, ohlcv_cache):
         """Test getting latest OHLCV bars."""
@@ -164,7 +172,7 @@ class TestOHLCVCache:
 
     async def test_get_latest_ohlcv_bars_with_error(self, ohlcv_cache):
         """Test get_latest_ohlcv_bars handles errors gracefully."""
-        with patch.object(ohlcv_cache._cache, 'lrange') as mock_lrange:
+        with patch.object(ohlcv_cache._cache, "lrange") as mock_lrange:
             mock_lrange.side_effect = Exception("Redis error")
 
             retrieved = await ohlcv_cache.get_latest_ohlcv_bars("BTCUSD", "1h", 10)
@@ -268,7 +276,14 @@ class TestOHLCVCache:
         bars = [
             [1234567890, 50000, 50100, 49900, 50050, 1234.56],  # All floats
             [1234567950, 50050.5, 50150.5, 50000.5, 50100.5, 2345.67],  # Decimals
-            [1234568010, "50100", "50200", "50050", "50150", "3456.78"],  # Strings are accepted in simplified version
+            [
+                1234568010,
+                "50100",
+                "50200",
+                "50050",
+                "50150",
+                "3456.78",
+            ],  # Strings are accepted in simplified version
         ]
 
         await ohlcv_cache.update_ohlcv_bars("BTCUSD", "1m", bars)
@@ -281,7 +296,7 @@ class TestOHLCVCache:
         """Test a complete usage scenario."""
         # Use worker-specific symbol to avoid parallel test conflicts
         symbol = f"BTC_{worker_id}_USD_INTEG"
-        
+
         # 1. Initial bars
         initial_bars = [
             [1234567890, 50000, 50100, 49900, 50050, 1234.56],
@@ -301,8 +316,8 @@ class TestOHLCVCache:
         recent = await ohlcv_cache.get_latest_ohlcv_bars(symbol, "1m", 3)
         assert len(recent) == 3
         assert recent[0] == initial_bars[2]  # Third initial bar
-        assert recent[1] == new_bars[0]      # First new bar
-        assert recent[2] == new_bars[1]      # Second new bar
+        assert recent[1] == new_bars[0]  # First new bar
+        assert recent[2] == new_bars[1]  # Second new bar
 
         # 4. Different timeframe for same symbol
         hourly_bar = [[1234567890, 50000, 50300, 49900, 50250, 15000]]

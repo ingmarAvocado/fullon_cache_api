@@ -14,13 +14,13 @@ from .ticker import TickerFactory
 from .trade import TradeFactory
 
 __all__ = [
-    'TickerFactory',
-    'OrderFactory',
-    'ProcessFactory',
-    'SymbolFactory',
-    'TradeFactory',
-    'OHLCVFactory',
-    'AccountFactory',
-    'PositionFactory',
-    'BotFactory',
+    "TickerFactory",
+    "OrderFactory",
+    "ProcessFactory",
+    "SymbolFactory",
+    "TradeFactory",
+    "OHLCVFactory",
+    "AccountFactory",
+    "PositionFactory",
+    "BotFactory",
 ]

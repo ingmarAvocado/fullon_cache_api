@@ -28,7 +28,7 @@ class TestBotCache:
 
     async def test_is_blocked_with_error(self, bot_cache):
         """Test is_blocked handles errors gracefully."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.hget.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
@@ -47,9 +47,9 @@ class TestBotCache:
         block_operations = [
             ("binance", "BTC/USDT", "bot_1"),
             ("kraken", "ETH/USD", "bot_2"),
-            ("binance", "ETH/USDT", "bot_3")
+            ("binance", "ETH/USDT", "bot_3"),
         ]
-        
+
         successful_blocks = []
         for ex_id, symbol, bot_id in block_operations:
             for attempt in range(3):
@@ -65,27 +65,31 @@ class TestBotCache:
 
         # Only test what was actually created successfully
         result = await bot_cache.get_blocks()
-        
+
         # Under parallel stress, we may not get all 3 blocks
         # But we should get at least the ones that were successfully created
         assert len(result) >= 1, f"Expected at least 1 block, got {len(result)}"
         assert len(result) <= 3, f"Expected at most 3 blocks, got {len(result)}"
-        
+
         # Check structure for all returned blocks
         expected_keys = {"ex_id", "symbol", "bot"}
         for block in result:
             assert set(block.keys()) == expected_keys
 
         # Verify that the returned blocks match what we attempted to create
-        blocks_dict = {f"{b['ex_id']}:{b['symbol']}": b['bot'] for b in result}
-        
+        blocks_dict = {f"{b['ex_id']}:{b['symbol']}": b["bot"] for b in result}
+
         # Check only the blocks that should exist based on successful operations
-        expected_blocks = {f"{ex_id}:{symbol}": bot_id for ex_id, symbol, bot_id in successful_blocks}
-        
+        expected_blocks = {
+            f"{ex_id}:{symbol}": bot_id for ex_id, symbol, bot_id in successful_blocks
+        }
+
         # Under parallel stress, verify that returned blocks are a subset of expected blocks
         for key, bot_id in blocks_dict.items():
             if key in expected_blocks:
-                assert expected_blocks[key] == bot_id, f"Block {key} has wrong bot_id: {bot_id} vs {expected_blocks[key]}"
+                assert (
+                    expected_blocks[key] == bot_id
+                ), f"Block {key} has wrong bot_id: {bot_id} vs {expected_blocks[key]}"
 
     async def test_get_blocks_with_invalid_format(self, bot_cache):
         """Test get_blocks handles invalid field formats."""
@@ -105,7 +109,7 @@ class TestBotCache:
 
     async def test_get_blocks_with_error(self, bot_cache):
         """Test get_blocks handles errors gracefully."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.hgetall.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
@@ -145,7 +149,7 @@ class TestBotCache:
 
     async def test_block_exchange_with_error(self, bot_cache):
         """Test block_exchange handles errors gracefully."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.hset.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
@@ -173,7 +177,7 @@ class TestBotCache:
 
     async def test_unblock_exchange_with_error(self, bot_cache):
         """Test unblock_exchange handles errors gracefully."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.hdel.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
@@ -196,7 +200,7 @@ class TestBotCache:
 
     async def test_is_opening_position_with_error(self, bot_cache):
         """Test is_opening_position handles errors gracefully."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.hget.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
@@ -237,12 +241,14 @@ class TestBotCache:
 
     async def test_mark_opening_position_with_error(self, bot_cache):
         """Test mark_opening_position handles errors gracefully."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.hset.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
 
-            result = await bot_cache.mark_opening_position("binance", "BTC/USDT", "bot_1")
+            result = await bot_cache.mark_opening_position(
+                "binance", "BTC/USDT", "bot_1"
+            )
             assert result is False
 
     async def test_unmark_opening_position_success(self, bot_cache):
@@ -265,7 +271,7 @@ class TestBotCache:
 
     async def test_unmark_opening_position_with_error(self, bot_cache):
         """Test unmark_opening_position handles errors gracefully."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.hdel.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
@@ -276,18 +282,16 @@ class TestBotCache:
     async def test_update_bot_success(self, bot_cache):
         """Test update_bot updates bot status."""
         import uuid
+
         bot_id = f"bot_1_{uuid.uuid4().hex[:8]}"
-        
+
         bot_data = {
             "feed_1": {
                 "status": "running",
                 "symbols": ["BTC/USDT"],
-                "performance": {"pnl": 100.0}
+                "performance": {"pnl": 100.0},
             },
-            "feed_2": {
-                "status": "paused",
-                "symbols": ["ETH/USDT"]
-            }
+            "feed_2": {"status": "paused", "symbols": ["ETH/USDT"]},
         }
 
         result = await bot_cache.update_bot(bot_id, bot_data)
@@ -304,12 +308,13 @@ class TestBotCache:
     async def test_update_bot_non_dict_values(self, bot_cache):
         """Test update_bot handles non-dict feed values."""
         import uuid
+
         bot_id = f"bot_1_{uuid.uuid4().hex[:8]}"
-        
+
         bot_data = {
             "feed_1": {"status": "running"},
             "feed_2": "invalid_value",  # Non-dict value
-            "feed_3": 123  # Another non-dict
+            "feed_3": 123,  # Another non-dict
         }
 
         result = await bot_cache.update_bot(bot_id, bot_data)
@@ -326,12 +331,14 @@ class TestBotCache:
 
     async def test_update_bot_with_error(self, bot_cache):
         """Test update_bot handles errors gracefully."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.hset.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
 
-            result = await bot_cache.update_bot("bot_1", {"feed_1": {"status": "running"}})
+            result = await bot_cache.update_bot(
+                "bot_1", {"feed_1": {"status": "running"}}
+            )
             assert result is False
 
     async def test_del_bot_success(self, bot_cache):
@@ -354,7 +361,7 @@ class TestBotCache:
 
     async def test_del_bot_with_error(self, bot_cache):
         """Test del_bot handles errors gracefully."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.hdel.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
@@ -384,7 +391,7 @@ class TestBotCache:
 
     async def test_del_status_with_error(self, bot_cache):
         """Test del_status handles errors gracefully."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.delete.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
@@ -402,11 +409,9 @@ class TestBotCache:
         # Add multiple bots
         bot1_data = {
             "feed_1": {"status": "running", "symbols": ["BTC/USDT"]},
-            "feed_2": {"status": "paused", "symbols": ["ETH/USDT"]}
+            "feed_2": {"status": "paused", "symbols": ["ETH/USDT"]},
         }
-        bot2_data = {
-            "feed_3": {"status": "stopped", "symbols": ["XRP/USDT"]}
-        }
+        bot2_data = {"feed_3": {"status": "stopped", "symbols": ["XRP/USDT"]}}
 
         await bot_cache.update_bot("bot_1", bot1_data)
         await bot_cache.update_bot("bot_2", bot2_data)
@@ -424,7 +429,9 @@ class TestBotCache:
         async with bot_cache._cache._redis_context() as redis_client:
             key = bot_cache._cache._make_key("bot_status")
             # Valid bot
-            await redis_client.hset(key, "bot_1", json.dumps({"feed_1": {"status": "running"}}))
+            await redis_client.hset(
+                key, "bot_1", json.dumps({"feed_1": {"status": "running"}})
+            )
             # Invalid JSON
             await redis_client.hset(key, "bot_2", "invalid{json}")
 
@@ -437,7 +444,7 @@ class TestBotCache:
 
     async def test_get_bots_with_error(self, bot_cache):
         """Test get_bots raises on Redis error."""
-        with patch.object(bot_cache._cache, '_redis_context') as mock_context:
+        with patch.object(bot_cache._cache, "_redis_context") as mock_context:
             mock_redis = AsyncMock()
             mock_redis.hgetall.side_effect = Exception("Redis error")
             mock_context.return_value.__aenter__.return_value = mock_redis
@@ -450,7 +457,9 @@ class TestBotCache:
         """Test proper bytes decoding throughout."""
         # Test with various Unicode characters
         await bot_cache.block_exchange("binance", "BTC/USDT", "bot_🤖")
-        await bot_cache.update_bot("bot_émoji", {"feed_1": {"status": "running", "symbol": "BTC/€"}})
+        await bot_cache.update_bot(
+            "bot_émoji", {"feed_1": {"status": "running", "symbol": "BTC/€"}}
+        )
 
         # Verify is_blocked decodes properly
         result = await bot_cache.is_blocked("binance", "BTC/USDT")
@@ -476,7 +485,7 @@ class TestBotCache:
 
         # Verify it's a valid ISO format timestamp
         # Should be able to parse it
-        dt = datetime.fromisoformat(timestamp.replace('+0000', '+00:00'))
+        dt = datetime.fromisoformat(timestamp.replace("+0000", "+00:00"))
         assert dt.tzinfo is not None
 
     async def test_integration_scenario(self, bot_cache):
@@ -490,9 +499,9 @@ class TestBotCache:
         assert await bot_cache.is_opening_position("binance", "BTC/USDT") is True
 
         # Update bot status
-        assert await bot_cache.update_bot("bot_1", {
-            "feed_1": {"status": "trading", "symbol": "BTC/USDT"}
-        })
+        assert await bot_cache.update_bot(
+            "bot_1", {"feed_1": {"status": "trading", "symbol": "BTC/USDT"}}
+        )
 
         # Bot 2 tries to block same symbol (should succeed but override)
         assert await bot_cache.block_exchange("binance", "BTC/USDT", "bot_2")

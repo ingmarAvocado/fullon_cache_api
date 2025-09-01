@@ -12,13 +12,13 @@ class BotFactory:
 
     def create(self, **kwargs) -> dict[str, Any]:
         """Create bot data with defaults.
-        
+
         Args:
             **kwargs: Override any default values
-            
+
         Returns:
             Dictionary with bot data
-            
+
         Example:
             factory = BotFactory()
             bot = factory.create(
@@ -63,19 +63,21 @@ class BotFactory:
 
         return result
 
-    def create_grid_bot(self,
-                       symbol: str = "BTC/USDT",
-                       grid_levels: int = 20,
-                       price_range: tuple = (45000, 55000),
-                       **kwargs) -> dict[str, Any]:
+    def create_grid_bot(
+        self,
+        symbol: str = "BTC/USDT",
+        grid_levels: int = 20,
+        price_range: tuple = (45000, 55000),
+        **kwargs,
+    ) -> dict[str, Any]:
         """Create a grid trading bot.
-        
+
         Args:
             symbol: Trading symbol
             grid_levels: Number of grid levels
             price_range: Tuple of (min_price, max_price)
             **kwargs: Additional overrides
-            
+
         Returns:
             Grid bot data
         """
@@ -92,22 +94,24 @@ class BotFactory:
                 "order_size": 100.0,
                 "grid_spacing": (max_price - min_price) / grid_levels,
             },
-            **kwargs
+            **kwargs,
         )
 
-    def create_arbitrage_bot(self,
-                            exchanges: list[str] = None,
-                            symbols: list[str] = None,
-                            min_profit: float = 0.1,
-                            **kwargs) -> dict[str, Any]:
+    def create_arbitrage_bot(
+        self,
+        exchanges: list[str] = None,
+        symbols: list[str] = None,
+        min_profit: float = 0.1,
+        **kwargs,
+    ) -> dict[str, Any]:
         """Create an arbitrage bot.
-        
+
         Args:
             exchanges: List of exchanges to monitor
             symbols: List of symbols to trade
             min_profit: Minimum profit percentage
             **kwargs: Additional overrides
-            
+
         Returns:
             Arbitrage bot data
         """
@@ -126,22 +130,24 @@ class BotFactory:
                 "slippage_tolerance": 0.05,
                 "execution_delay_ms": 100,
             },
-            **kwargs
+            **kwargs,
         )
 
-    def create_dca_bot(self,
-                      symbol: str = "BTC/USDT",
-                      interval_hours: int = 24,
-                      amount_per_order: float = 100.0,
-                      **kwargs) -> dict[str, Any]:
+    def create_dca_bot(
+        self,
+        symbol: str = "BTC/USDT",
+        interval_hours: int = 24,
+        amount_per_order: float = 100.0,
+        **kwargs,
+    ) -> dict[str, Any]:
         """Create a DCA (Dollar Cost Averaging) bot.
-        
+
         Args:
             symbol: Trading symbol
             interval_hours: Hours between purchases
             amount_per_order: Amount to buy each time
             **kwargs: Additional overrides
-            
+
         Returns:
             DCA bot data
         """
@@ -156,20 +162,19 @@ class BotFactory:
                 "last_order_time": None,
                 "average_price": 0.0,
             },
-            **kwargs
+            **kwargs,
         )
 
-    def create_market_maker_bot(self,
-                               symbol: str = "BTC/USDT",
-                               spread: float = 0.1,
-                               **kwargs) -> dict[str, Any]:
+    def create_market_maker_bot(
+        self, symbol: str = "BTC/USDT", spread: float = 0.1, **kwargs
+    ) -> dict[str, Any]:
         """Create a market maker bot.
-        
+
         Args:
             symbol: Trading symbol
             spread: Spread percentage
             **kwargs: Additional overrides
-            
+
         Returns:
             Market maker bot data
         """
@@ -185,16 +190,18 @@ class BotFactory:
                 "min_spread": 0.05,
                 "max_spread": 0.5,
             },
-            **kwargs
+            **kwargs,
         )
 
-    def create_stopped_bot(self, stop_reason: str = "User stopped", **kwargs) -> dict[str, Any]:
+    def create_stopped_bot(
+        self, stop_reason: str = "User stopped", **kwargs
+    ) -> dict[str, Any]:
         """Create a stopped bot.
-        
+
         Args:
             stop_reason: Reason for stopping
             **kwargs: Additional overrides
-            
+
         Returns:
             Stopped bot data
         """
@@ -205,22 +212,24 @@ class BotFactory:
                 "stop_reason": stop_reason,
                 "stopped_at": datetime.now(UTC).isoformat(),
             },
-            **kwargs
+            **kwargs,
         )
 
-    def create_profitable_bot(self,
-                             total_trades: int = 100,
-                             win_rate: float = 0.65,
-                             avg_profit: float = 50.0,
-                             **kwargs) -> dict[str, Any]:
+    def create_profitable_bot(
+        self,
+        total_trades: int = 100,
+        win_rate: float = 0.65,
+        avg_profit: float = 50.0,
+        **kwargs,
+    ) -> dict[str, Any]:
         """Create a bot with profitable performance.
-        
+
         Args:
             total_trades: Total number of trades
             win_rate: Win rate (0-1)
             avg_profit: Average profit per winning trade
             **kwargs: Additional overrides
-            
+
         Returns:
             Profitable bot data
         """
@@ -245,20 +254,19 @@ class BotFactory:
                 "sharpe_ratio": 1.5,
                 "max_drawdown": 10.0,
             },
-            **kwargs
+            **kwargs,
         )
 
-    def create_batch(self,
-                    count: int,
-                    strategies: list[str] = None,
-                    user_id: int = 123) -> list[dict[str, Any]]:
+    def create_batch(
+        self, count: int, strategies: list[str] = None, user_id: int = 123
+    ) -> list[dict[str, Any]]:
         """Create multiple bots.
-        
+
         Args:
             count: Number of bots to create
             strategies: List of strategies to cycle through
             user_id: User ID for all bots
-            
+
         Returns:
             List of bot dictionaries
         """
