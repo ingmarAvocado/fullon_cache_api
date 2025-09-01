@@ -80,7 +80,8 @@ def test_get_positions_unit_real_redis():
                 # ORM disallows negative volume; use side='short' with positive volume
                 Position(symbol="ETH/USDT", volume=1.2, price=3000.0, ex_id="1", side="short"),
             ]
-            await cache.upsert_positions(222, positions)
+            # Store positions by exchange_id (1), not user_id
+            await cache.upsert_positions(1, positions)
         finally:
             await cache._cache.close()
 
@@ -90,13 +91,12 @@ def test_get_positions_unit_real_redis():
         request = {
             "action": "get_positions",
             "request_id": "ap1",
-            "params": {"user_id": 222, "exchange": "1"},
+            "params": {"exchange": "1"},  # Request positions by exchange, not user_id
         }
         ws.send_text(json.dumps(request))
         response = json.loads(ws.receive_text())
 
         assert response["success"] is True
-        assert response["result"]["user_id"] == 222
         assert response["result"]["exchange"] == "1"
         assert response["result"]["count"] >= 2
         symbols = {p["symbol"] for p in response["result"]["positions"]}

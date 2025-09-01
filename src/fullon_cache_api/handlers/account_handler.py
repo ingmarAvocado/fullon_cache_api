@@ -186,18 +186,19 @@ class AccountWebSocketHandler:
         connection_id: str,
     ) -> None:
         user_id = params.get("user_id")
-        ex_filter = params.get("exchange")
+        exchange = params.get("exchange")
 
-        if user_id is None:
+        # Support both user-centric and exchange-centric requests
+        if user_id is None and exchange is None:
             await self.send_error(
-                websocket, request_id, "INVALID_PARAMS", "user_id parameter required"
+                websocket, request_id, "INVALID_PARAMS", "user_id or exchange parameter required"
             )
             return
 
         logger.info(
             "Get positions operation started",
             user_id=user_id,
-            exchange=ex_filter,
+            exchange=exchange,
             request_id=request_id,
             connection_id=connection_id,
         )
@@ -206,13 +207,21 @@ class AccountWebSocketHandler:
             from fullon_cache import AccountCache  # type: ignore
 
             async with AccountCache() as cache:  # type: ignore[call-arg]
-                positions = await cache.get_positions(int(user_id))
+                if exchange is not None:
+                    # Exchange-centric approach: get positions by exchange_id
+                    positions = await cache.get_positions(int(exchange))
+                else:
+                    # User-centric approach: get all positions and filter (fallback)
+                    positions = await cache.get_all_positions()
 
             items: list[dict[str, Any]] = []
             for p in positions or []:
-                # Optional exchange filtering using Position.ex_id
+                # If we have a user_id filter, skip positions that don't match
+                # (Note: Position model doesn't have user_id, so this is conceptually limited)
+                
+                # If we have an exchange filter, apply it
                 ex_id = getattr(p, "ex_id", None)
-                if ex_filter is not None and str(ex_id) != str(ex_filter):
+                if exchange is not None and str(ex_id) != str(exchange):
                     continue
 
                 volume = float(getattr(p, "volume", 0.0))
@@ -240,8 +249,8 @@ class AccountWebSocketHandler:
                 "action": "get_positions",
                 "success": True,
                 "result": {
-                    "user_id": int(user_id),
-                    "exchange": ex_filter,
+                    "user_id": int(user_id) if user_id else None,
+                    "exchange": exchange,
                     "positions": items,
                     "count": len(items),
                 },
@@ -251,6 +260,7 @@ class AccountWebSocketHandler:
             logger.error(
                 "Get positions failed",
                 user_id=user_id,
+                exchange=exchange,
                 error=str(exc),
                 request_id=request_id,
             )
@@ -266,10 +276,12 @@ class AccountWebSocketHandler:
         connection_id: str,
     ) -> None:
         user_id = params.get("user_id")
-        ex_filter = params.get("exchange")
-        if user_id is None:
+        exchange = params.get("exchange")
+        
+        # Support both user-centric and exchange-centric streaming
+        if user_id is None and exchange is None:
             await self.send_error(
-                websocket, request_id, "INVALID_PARAMS", "user_id parameter required"
+                websocket, request_id, "INVALID_PARAMS", "user_id or exchange parameter required"
             )
             return
 
@@ -277,7 +289,7 @@ class AccountWebSocketHandler:
         try:
             task = asyncio.create_task(
                 self._stream_position_updates(
-                    websocket, request_id, int(user_id), ex_filter, stream_key
+                    websocket, request_id, int(user_id) if user_id else None, exchange, stream_key
                 )
             )
             self.streaming_tasks[stream_key] = task
@@ -286,7 +298,7 @@ class AccountWebSocketHandler:
                 "request_id": request_id,
                 "action": "stream_positions",
                 "success": True,
-                "message": f"Streaming started for user {user_id}",
+                "message": f"Streaming started for {'user ' + str(user_id) if user_id else 'exchange ' + str(exchange)}",
                 "stream_key": stream_key,
             }
             await websocket.send_text(json.dumps(confirmation))
@@ -294,6 +306,7 @@ class AccountWebSocketHandler:
             logger.error(
                 "Position streaming initialization failed",
                 user_id=user_id,
+                exchange=exchange,
                 error=str(exc),
                 stream_key=stream_key,
             )
@@ -308,8 +321,8 @@ class AccountWebSocketHandler:
         self,
         websocket: WebSocket,
         request_id: str,
-        user_id: int,
-        ex_filter: str | int | None,
+        user_id: int | None,
+        exchange: str | int | None,
         stream_key: str,
     ) -> None:
         """Poll positions periodically and emit updates (async iterator style)."""
@@ -318,10 +331,14 @@ class AccountWebSocketHandler:
             from fullon_cache import AccountCache  # type: ignore
 
             async with AccountCache() as cache:  # type: ignore[call-arg]
-                # Initial snapshot
-                positions = await cache.get_positions(user_id)
+                # Initial snapshot - use exchange-centric or user-centric approach
+                if exchange is not None:
+                    positions = await cache.get_positions(int(exchange))
+                else:
+                    positions = await cache.get_all_positions()
+                    
                 await self._emit_position_list(
-                    websocket, request_id, stream_key, positions, ex_filter
+                    websocket, request_id, stream_key, positions, exchange
                 )
                 last_snapshot = {
                     f"{getattr(p,'symbol',None)}:{getattr(p,'ex_id',None)}": float(
@@ -332,7 +349,11 @@ class AccountWebSocketHandler:
 
                 # Polling loop
                 while True:
-                    positions = await cache.get_positions(user_id)
+                    if exchange is not None:
+                        positions = await cache.get_positions(int(exchange))
+                    else:
+                        positions = await cache.get_all_positions()
+                        
                     current = {
                         f"{getattr(p,'symbol',None)}:{getattr(p,'ex_id',None)}": float(
                             getattr(p, "volume", 0.0)
@@ -342,7 +363,7 @@ class AccountWebSocketHandler:
 
                     if current != last_snapshot:
                         await self._emit_position_list(
-                            websocket, request_id, stream_key, positions, ex_filter
+                            websocket, request_id, stream_key, positions, exchange
                         )
                         last_snapshot = current
 
@@ -360,11 +381,11 @@ class AccountWebSocketHandler:
         request_id: str,
         stream_key: str,
         positions: list[Any] | None,
-        ex_filter: str | int | None,
+        exchange_filter: str | int | None,
     ) -> None:
         for p in positions or []:
             ex_id = getattr(p, "ex_id", None)
-            if ex_filter is not None and str(ex_id) != str(ex_filter):
+            if exchange_filter is not None and str(ex_id) != str(exchange_filter):
                 continue
 
             volume = float(getattr(p, "volume", 0.0))

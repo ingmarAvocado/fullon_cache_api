@@ -99,7 +99,8 @@ def test_get_positions_real_redis():
                     ex_id="1",
                 ),
             ]
-            await cache.upsert_positions(456, positions)
+            # Store positions by exchange_id (1), not user_id
+            await cache.upsert_positions(1, positions)
         finally:
             await cache._cache.close()
 
@@ -109,13 +110,13 @@ def test_get_positions_real_redis():
         request = {
             "action": "get_positions",
             "request_id": "pos1",
-            "params": {"user_id": 456, "exchange": "1"},
+            "params": {"exchange": "1"},  # Request positions by exchange, not user_id
         }
         ws.send_text(json.dumps(request))
         response = json.loads(ws.receive_text())
 
         assert response["success"] is True
-        assert response["result"]["user_id"] == 456
+        assert response["result"]["user_id"] is None  # No user_id in exchange-centric approach
         assert response["result"]["count"] >= 2
         symbols = {p["symbol"] for p in response["result"]["positions"]}
         assert {"BTC/USDT", "ETH/USDT"}.issubset(symbols)
@@ -137,8 +138,9 @@ def test_stream_positions_real_redis():
     async def _seed_initial():
         cache = AccountCache()
         try:
+            # Store positions by exchange_id (1), not user_id
             await cache.upsert_positions(
-                user_id,
+                1,  # exchange_id
                 [
                     Position(
                         symbol="BTC/USDT",
@@ -160,7 +162,7 @@ def test_stream_positions_real_redis():
         request = {
             "action": "stream_positions",
             "request_id": "stream1",
-            "params": {"user_id": user_id, "exchange": "1"},
+            "params": {"exchange": "1"},  # Stream positions by exchange, not user_id
         }
         ws.send_text(json.dumps(request))
 
@@ -174,8 +176,9 @@ def test_stream_positions_real_redis():
             cache = AccountCache()
             try:
                 await asyncio.sleep(0.6)
+                # Update positions by exchange_id (1)
                 await cache.upsert_positions(
-                    user_id,
+                    1,  # exchange_id
                     [
                         Position(
                             symbol="BTC/USDT",
@@ -201,6 +204,7 @@ def test_stream_positions_real_redis():
                 break
 
         assert len(updates) >= 1
-        assert updates[0]["result"]["user_id"] == user_id
+        # In exchange-centric approach, user_id is not relevant for position updates
+        assert updates[0]["result"]["user_id"] is None
         assert updates[0]["result"]["exchange"] == "1"
         assert updates[0]["result"]["symbol"] == "BTC/USDT"

@@ -34,7 +34,7 @@ except Exception:
 try:  # pragma: no cover - environment dependent
     import os
 
-    mappings = {
+    _mappings = {
         "REDIS_HOST": ("CACHE_HOST", "localhost"),
         "REDIS_PORT": ("CACHE_PORT", "6379"),
         "REDIS_DB": ("CACHE_DB", "0"),
@@ -42,15 +42,15 @@ try:  # pragma: no cover - environment dependent
         "REDIS_PASSWORD": ("CACHE_PASSWORD", None),
         "REDIS_TIMEOUT": ("CACHE_TIMEOUT", "30"),
     }
-    for target, (source, default) in mappings.items():
-        if os.environ.get(target):
+    for _target, (_source, _default) in _mappings.items():
+        if os.environ.get(_target):
             continue
-        val = os.environ.get(source, default)
+        _val = os.environ.get(_source, _default)
         # Treat textual 'None'/'null' as unset to avoid bad auth
-        if isinstance(val, str) and val.strip().lower() in {"none", "null", ""}:
+        if isinstance(_val, str) and _val.strip().lower() in {"none", "null", ""}:
             continue
-        if val is not None:
-            os.environ[target] = str(val)
+        if _val is not None:
+            os.environ[_target] = str(_val)
 except Exception:
     pass
 
@@ -152,3 +152,15 @@ __all__ = [
     "CacheTimeoutError",
     "FastAPIWebSocketConnectionError",
 ]
+
+# Clean up temporary variables to avoid polluting module namespace
+try:
+    del _mappings, _target, _source, _default, _val
+except NameError:
+    pass  # Variables already cleaned up or not created due to exceptions
+
+# Clean up imports that shouldn't be public
+try:
+    del load_dotenv, os
+except NameError:
+    pass  # Imports not available or already cleaned up

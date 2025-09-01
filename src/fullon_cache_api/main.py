@@ -14,6 +14,7 @@ from fullon_log import get_component_logger  # type: ignore
 from .routers.accounts import router as accounts_router
 from .routers.bots import router as bots_router
 from .routers.orders import router as orders_router
+from .routers.trades import router as trades_router
 from .routers.tickers import router as tickers_router
 from .routers.websocket import router as ws_router
 
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
     app.include_router(tickers_router)
     app.include_router(bots_router)
     app.include_router(orders_router)
+    app.include_router(trades_router)
     app.include_router(accounts_router)
     logger.info("FastAPI WebSocket app created")
     return app

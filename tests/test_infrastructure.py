@@ -372,6 +372,7 @@ class TestImports:
         public_attrs = [
             name for name in dir(fullon_cache_api) if not name.startswith("_")
         ]
+        
 
         # They should all be in __all__
         for attr in public_attrs:
@@ -381,6 +382,9 @@ class TestImports:
                 "types",
                 "exceptions",
                 "models",
+                "handlers",  # May be exposed when other tests import main.py
+                "main",      # May be exposed when other tests import main.py
+                "routers",   # May be exposed when other tests import main.py
             ]:  # Skip internal modules and special attributes
                 assert attr in fullon_cache_api.__all__, f"'{attr}' not in __all__"
 

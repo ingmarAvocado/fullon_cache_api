@@ -52,8 +52,8 @@ def test_get_order_status_real_redis():
     try:
         from fullon_cache import OrdersCache  # type: ignore
         from tests.factories.order import OrderFactory
-    except Exception:
-        pytest.skip("fullon_cache not available in environment")
+    except Exception as e:
+        pytest.skip(f"Dependencies not available: {e}")
 
     app = create_app()
     client = TestClient(app)
