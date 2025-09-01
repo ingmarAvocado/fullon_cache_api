@@ -39,23 +39,18 @@ class TickerFactory:
                 "bid": bid,
                 "ask": ask,
                 "last": price,
-                "change_24h": kwargs.get("change_24h", 2.5),
-                "high_24h": kwargs.get("high_24h", price * 1.05),
-                "low_24h": kwargs.get("low_24h", price * 0.95),
             }
 
+        # Create ORM Tick using supported constructor args (no extra kwargs)
         return Tick(
             symbol=symbol,
             exchange=exchange,
-            price=Decimal(str(price)),
-            volume=Decimal(str(volume)),
+            price=float(price),
+            volume=float(volume),
             time=kwargs.get("time", time.time()),
-            bid=Decimal(str(bid)),
-            ask=Decimal(str(ask)),
-            last=Decimal(str(price)),
-            change_24h=kwargs.get("change_24h", 2.5),
-            high_24h=kwargs.get("high_24h", price * 1.05),
-            low_24h=kwargs.get("low_24h", price * 0.95),
+            bid=float(bid),
+            ask=float(ask),
+            last=float(price),
         )
 
     def create_batch(
