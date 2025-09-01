@@ -10,39 +10,7 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from fastapi import WebSocket
-
-
-def _safe_get_component_logger(name: str):
-    try:  # Avoid fullon_log multiprocessing init in restricted envs
-        from fullon_log import get_component_logger as _gcl  # type: ignore
-
-        return _gcl(name)
-    except Exception:  # pragma: no cover - environment dependent
-        import logging
-
-        class _KVLLoggerAdapter:
-            def __init__(self, base):
-                self._base = base
-
-            def _fmt(self, msg: str, **kwargs):
-                if kwargs:
-                    kv = " ".join(f"{k}={v}" for k, v in kwargs.items())
-                    return f"{msg} | {kv}"
-                return msg
-
-            def debug(self, msg, *args, **kwargs):
-                self._base.debug(self._fmt(msg, **kwargs), *args)
-
-            def info(self, msg, *args, **kwargs):
-                self._base.info(self._fmt(msg, **kwargs), *args)
-
-            def warning(self, msg, *args, **kwargs):
-                self._base.warning(self._fmt(msg, **kwargs), *args)
-
-            def error(self, msg, *args, **kwargs):
-                self._base.error(self._fmt(msg, **kwargs), *args)
-
-        return _KVLLoggerAdapter(logging.getLogger(name))
+from fullon_log import get_component_logger  # type: ignore
 
 
 class BaseFastAPIWebSocketHandler(ABC):
@@ -50,8 +18,8 @@ class BaseFastAPIWebSocketHandler(ABC):
 
     def __init__(self) -> None:
         """Initialize WebSocket handler with logging."""
-        # CRITICAL: Use fullon_log component logger (fallback to stdlib logger)
-        self.logger = _safe_get_component_logger("fullon.api.cache.websocket")
+        # CRITICAL: Use fullon_log component logger
+        self.logger = get_component_logger("fullon.api.cache.websocket")
 
     @abstractmethod
     async def handle_message(
@@ -92,8 +60,8 @@ class BaseFastAPIWebSocketStream(ABC):
 
     def __init__(self) -> None:
         """Initialize WebSocket stream handler with logging."""
-        # CRITICAL: Use fullon_log component logger (fallback to stdlib logger)
-        self.logger = _safe_get_component_logger("fullon.api.cache.websocket.stream")
+        # CRITICAL: Use fullon_log component logger
+        self.logger = get_component_logger("fullon.api.cache.websocket.stream")
 
     @abstractmethod
     async def stream_updates(
@@ -119,8 +87,8 @@ class CacheHealthChecker:
 
     def __init__(self) -> None:
         """Initialize health checker with logging."""
-        # CRITICAL: Use fullon_log component logger (fallback to stdlib logger)
-        self.logger = _safe_get_component_logger("fullon.api.cache.health")
+        # CRITICAL: Use fullon_log component logger
+        self.logger = get_component_logger("fullon.api.cache.health")
 
     async def check_websocket_connectivity(self) -> dict[str, Any]:
         """Check FastAPI WebSocket server connectivity.
