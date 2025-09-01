@@ -97,7 +97,7 @@ def test_get_positions_unit_real_redis():
 
         assert response["success"] is True
         assert response["result"]["user_id"] == 222
-        assert response["result"]["exchange"] == "ex1"
+        assert response["result"]["exchange"] == "1"
         assert response["result"]["count"] >= 2
         symbols = {p["symbol"] for p in response["result"]["positions"]}
         assert {"BTC/USDT", "ETH/USDT"}.issubset(symbols)
