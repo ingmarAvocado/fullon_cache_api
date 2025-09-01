@@ -57,6 +57,7 @@ def test_get_system_health_unit_real_redis() -> None:
 def test_get_active_processes_unit_real_redis() -> None:
     try:
         from fullon_cache import ProcessCache  # type: ignore
+        from fullon_cache.process_cache import ProcessType  # type: ignore
     except Exception:
         pytest.skip("fullon_cache not available in environment")
 
@@ -67,9 +68,9 @@ def test_get_active_processes_unit_real_redis() -> None:
     async def _seed() -> None:
         cache = ProcessCache()
         try:
-            # Use supported signature: process_type + component
-            await cache.register_process(process_type="worker", component="Worker A")
-            await cache.register_process(process_type="worker", component="Worker B")
+            # Use supported signature with Enum process type
+            await cache.register_process(process_type=ProcessType.BOT, component="Worker A")
+            await cache.register_process(process_type=ProcessType.BOT, component="Worker B")
         finally:
             await cache._cache.close()
 
@@ -120,7 +121,7 @@ def test_stream_process_health_unit_real_redis() -> None:
             cache = ProcessCache()
             try:
                 await asyncio.sleep(0.6)
-                await cache.register_process(process_type="worker", component="Worker C")
+                await cache.register_process(process_type=ProcessType.BOT, component="Worker C")
             finally:
                 await cache._cache.close()
 
