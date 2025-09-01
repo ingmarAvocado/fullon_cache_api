@@ -67,16 +67,9 @@ def test_get_active_processes_unit_real_redis() -> None:
     async def _seed() -> None:
         cache = ProcessCache()
         try:
-            await cache.register_process(
-                process_id=f"proc_{uuid.uuid4().hex[:6]}",
-                process_type="worker",
-                name="Worker A",
-            )
-            await cache.register_process(
-                process_id=f"proc_{uuid.uuid4().hex[:6]}",
-                process_type="worker",
-                name="Worker B",
-            )
+            # Use supported signature: process_type + component
+            await cache.register_process(process_type="worker", component="Worker A")
+            await cache.register_process(process_type="worker", component="Worker B")
         finally:
             await cache._cache.close()
 
@@ -127,11 +120,7 @@ def test_stream_process_health_unit_real_redis() -> None:
             cache = ProcessCache()
             try:
                 await asyncio.sleep(0.6)
-                await cache.register_process(
-                    process_id=f"proc_{uuid.uuid4().hex[:6]}",
-                    process_type="worker",
-                    name="Worker C",
-                )
+                await cache.register_process(process_type="worker", component="Worker C")
             finally:
                 await cache._cache.close()
 
@@ -149,4 +138,3 @@ def test_stream_process_health_unit_real_redis() -> None:
         upd = updates[0]["result"]
         assert isinstance(upd.get("active_processes"), int)
         assert "timestamp" in upd
-
