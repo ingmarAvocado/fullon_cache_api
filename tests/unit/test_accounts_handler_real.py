@@ -76,8 +76,9 @@ def test_get_positions_unit_real_redis():
         cache = AccountCache()
         try:
             positions = [
-                Position(symbol="BTC/USDT", volume=0.3, price=50000.0, ex_id="ex1"),
-                Position(symbol="ETH/USDT", volume=-1.2, price=3000.0, ex_id="ex1"),
+                Position(symbol="BTC/USDT", volume=0.3, price=50000.0, ex_id="ex1", side="long"),
+                # ORM disallows negative volume; use side='short' with positive volume
+                Position(symbol="ETH/USDT", volume=1.2, price=3000.0, ex_id="ex1", side="short"),
             ]
             await cache.upsert_positions(222, positions)
         finally:
@@ -100,4 +101,3 @@ def test_get_positions_unit_real_redis():
         assert response["result"]["count"] >= 2
         symbols = {p["symbol"] for p in response["result"]["positions"]}
         assert {"BTC/USDT", "ETH/USDT"}.issubset(symbols)
-
