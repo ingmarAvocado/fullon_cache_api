@@ -216,7 +216,9 @@ class AccountWebSocketHandler:
                     continue
 
                 volume = float(getattr(p, "volume", 0.0))
-                side = "long" if volume >= 0 else "short"
+                # Prefer explicit side from model; fallback to sign
+                side_attr = getattr(p, "side", None)
+                side = side_attr if side_attr in {"long", "short"} else ("long" if volume >= 0 else "short")
                 items.append(
                     {
                         "symbol": getattr(p, "symbol", None),
@@ -366,7 +368,8 @@ class AccountWebSocketHandler:
                 continue
 
             volume = float(getattr(p, "volume", 0.0))
-            side = "long" if volume >= 0 else "short"
+            side_attr = getattr(p, "side", None)
+            side = side_attr if side_attr in {"long", "short"} else ("long" if volume >= 0 else "short")
             msg = {
                 "request_id": request_id,
                 "action": "position_update",
