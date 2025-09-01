@@ -76,9 +76,9 @@ def test_get_positions_unit_real_redis():
         cache = AccountCache()
         try:
             positions = [
-                Position(symbol="BTC/USDT", volume=0.3, price=50000.0, ex_id="ex1", side="long"),
+                Position(symbol="BTC/USDT", volume=0.3, price=50000.0, ex_id="1", side="long"),
                 # ORM disallows negative volume; use side='short' with positive volume
-                Position(symbol="ETH/USDT", volume=1.2, price=3000.0, ex_id="ex1", side="short"),
+                Position(symbol="ETH/USDT", volume=1.2, price=3000.0, ex_id="1", side="short"),
             ]
             await cache.upsert_positions(222, positions)
         finally:
@@ -90,7 +90,7 @@ def test_get_positions_unit_real_redis():
         request = {
             "action": "get_positions",
             "request_id": "ap1",
-            "params": {"user_id": 222, "exchange": "ex1"},
+            "params": {"user_id": 222, "exchange": "1"},
         }
         ws.send_text(json.dumps(request))
         response = json.loads(ws.receive_text())
