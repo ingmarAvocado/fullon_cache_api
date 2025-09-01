@@ -18,6 +18,7 @@ from .routers.trades import router as trades_router
 from .routers.ohlcv import router as ohlcv_router
 from .routers.tickers import router as tickers_router
 from .routers.websocket import router as ws_router
+from .routers.process import router as process_router
 
 logger = get_component_logger("fullon.api.cache.app")
 
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(trades_router)
     app.include_router(ohlcv_router)
     app.include_router(accounts_router)
+    app.include_router(process_router)
     logger.info("FastAPI WebSocket app created")
     return app
 
