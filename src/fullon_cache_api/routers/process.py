@@ -13,4 +13,3 @@ process_handler = ProcessWebSocketHandler()
 @router.websocket("/ws/process/{connection_id}")
 async def process_websocket_endpoint(websocket: WebSocket, connection_id: str) -> None:
     await process_handler.handle_connection(websocket, connection_id)
-

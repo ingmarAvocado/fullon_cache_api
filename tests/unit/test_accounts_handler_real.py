@@ -38,7 +38,9 @@ def test_get_balance_unit_real_redis():
     async def _seed():
         cache = AccountCache()
         try:
-            await cache.upsert_user_account(111, {"USDT": {"balance": 200.0, "available": 150.0}})
+            await cache.upsert_user_account(
+                111, {"USDT": {"balance": 200.0, "available": 150.0}}
+            )
         finally:
             await cache._cache.close()
 
@@ -76,9 +78,13 @@ def test_get_positions_unit_real_redis():
         cache = AccountCache()
         try:
             positions = [
-                Position(symbol="BTC/USDT", volume=0.3, price=50000.0, ex_id="1", side="long"),
+                Position(
+                    symbol="BTC/USDT", volume=0.3, price=50000.0, ex_id="1", side="long"
+                ),
                 # ORM disallows negative volume; use side='short' with positive volume
-                Position(symbol="ETH/USDT", volume=1.2, price=3000.0, ex_id="1", side="short"),
+                Position(
+                    symbol="ETH/USDT", volume=1.2, price=3000.0, ex_id="1", side="short"
+                ),
             ]
             # Store positions by exchange_id (1), not user_id
             await cache.upsert_positions(1, positions)

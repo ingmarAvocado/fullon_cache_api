@@ -66,12 +66,14 @@ def test_get_ticker_real_redis():
     import asyncio
 
     seeded_successfully = False
+
     async def _seed():
         nonlocal seeded_successfully
         cache = TickCache()
         try:
             # Try different approaches to set ticker data
             from fullon_orm.models import Tick
+
             tick_obj = Tick(
                 symbol=symbol,
                 exchange=exchange,

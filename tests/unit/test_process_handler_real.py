@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import time
-import uuid
 
 import pytest
 from fullon_cache_api.main import create_app
@@ -69,8 +67,12 @@ def test_get_active_processes_unit_real_redis() -> None:
         cache = ProcessCache()
         try:
             # Use supported signature with Enum process type
-            await cache.register_process(process_type=ProcessType.BOT, component="Worker A")
-            await cache.register_process(process_type=ProcessType.BOT, component="Worker B")
+            await cache.register_process(
+                process_type=ProcessType.BOT, component="Worker A"
+            )
+            await cache.register_process(
+                process_type=ProcessType.BOT, component="Worker B"
+            )
         finally:
             await cache._cache.close()
 
@@ -121,12 +123,14 @@ def test_stream_process_health_unit_real_redis() -> None:
             cache = ProcessCache()
             try:
                 await asyncio.sleep(0.6)
-                await cache.register_process(process_type=ProcessType.BOT, component="Worker C")
+                await cache.register_process(
+                    process_type=ProcessType.BOT, component="Worker C"
+                )
             finally:
                 await cache._cache.close()
 
         loop = asyncio.get_event_loop()
-        loop.create_task(_mutate())
+        task = loop.create_task(_mutate())
 
         updates: list[dict] = []
         for _ in range(6):
@@ -136,6 +140,11 @@ def test_stream_process_health_unit_real_redis() -> None:
                 break
 
         assert len(updates) >= 1
+        # Ensure background mutation task is finalized to avoid warnings
+        try:
+            loop.run_until_complete(task)
+        except Exception:
+            pass
         upd = updates[0]["result"]
         assert isinstance(upd.get("active_processes"), int)
         assert "timestamp" in upd

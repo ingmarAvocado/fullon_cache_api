@@ -2,7 +2,6 @@
 
 import time
 import uuid
-from decimal import Decimal
 
 try:  # type: ignore
     from fullon_orm.models import Order  # type: ignore
@@ -49,16 +48,15 @@ class OrderFactory:
 
         o = Order()  # type: ignore[call-arg]
         # Common/exchange identifiers
-        setattr(o, "ex_order_id", order_id)
-        setattr(o, "exchange", exchange)
+        o.ex_order_id = order_id
+        o.exchange = exchange
         # Core order data
-        setattr(o, "symbol", symbol)
-        setattr(o, "side", side)
-        setattr(o, "volume", float(amount))
-        setattr(o, "price", float(price))
-        setattr(o, "final_volume", float(filled) if filled else None)
-        setattr(o, "status", kwargs.get("status", "open"))
-        setattr(o, "order_type", kwargs.get("order_type", "limit"))
-        setattr(o, "timestamp", kwargs.get("timestamp", time.time()))
+        o.symbol = symbol
+        o.side = side
+        o.volume = float(amount)
+        o.price = float(price)
+        o.final_volume = float(filled) if filled else None
+        o.status = kwargs.get("status", "open")
+        o.order_type = kwargs.get("order_type", "limit")
+        o.timestamp = kwargs.get("timestamp", time.time())
         return o
-

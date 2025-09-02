@@ -51,6 +51,7 @@ def test_get_order_status_not_found_real_redis():
 def test_get_order_status_real_redis():
     try:
         from fullon_cache import OrdersCache  # type: ignore
+
         from tests.factories.order import OrderFactory
     except Exception as e:
         pytest.skip(f"Dependencies not available: {e}")
@@ -91,6 +92,7 @@ def test_get_order_status_real_redis():
 def test_get_queue_length_real_redis():
     try:
         from fullon_cache import OrdersCache  # type: ignore
+
         from tests.factories.order import OrderFactory
     except Exception:
         pytest.skip("fullon_cache not available in environment")
@@ -131,6 +133,7 @@ def test_get_queue_length_real_redis():
 def test_stream_order_queue_real_redis():
     try:
         from fullon_cache import OrdersCache  # type: ignore
+
         from tests.factories.order import OrderFactory
     except Exception:
         pytest.skip("fullon_cache not available in environment")
@@ -182,4 +185,3 @@ def test_stream_order_queue_real_redis():
         assert len(updates) >= 1
         assert updates[0]["result"]["exchange"] == exchange
         assert isinstance(updates[0]["result"]["queue_length"], int)
-

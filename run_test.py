@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -217,9 +216,7 @@ Examples:
     parser.add_argument(
         "--tb", choices=["auto", "long", "short", "line", "native", "no"], help="TB"
     )
-    parser.add_argument(
-        "--capture", choices=["sys", "fd", "no"], help="Capture method"
-    )
+    parser.add_argument("--capture", choices=["sys", "fd", "no"], help="Capture method")
     parser.add_argument("-s", "--capture-no", action="store_true")
     parser.add_argument("--no-header", action="store_true")
     parser.add_argument("--no-summary", action="store_true")
@@ -243,9 +240,7 @@ Examples:
 
     # Coverage
     parser.add_argument("--cov", nargs="?", const=True)
-    parser.add_argument(
-        "--cov-report", choices=["term", "html", "xml", "term-missing"]
-    )
+    parser.add_argument("--cov-report", choices=["term", "html", "xml", "term-missing"])
     parser.add_argument("--cov-fail-under", type=int)
     parser.add_argument("--junitxml")
 

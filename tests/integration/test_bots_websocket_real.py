@@ -40,7 +40,9 @@ def test_get_bot_status_real_redis():
         cache = BotCache()
         try:
             # Bot status is stored via update_bot(bot_id, data)
-            await cache.update_bot("BOT_001", {"feed_1": {"status": "active", "symbol": "BTC/USDT"}})
+            await cache.update_bot(
+                "BOT_001", {"feed_1": {"status": "active", "symbol": "BTC/USDT"}}
+            )
         finally:
             await cache._cache.close()
 
@@ -183,4 +185,3 @@ def test_stream_bot_status_real_redis():
                     break
 
         assert len(updates) >= 1
-

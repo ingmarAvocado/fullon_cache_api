@@ -116,7 +116,9 @@ def test_get_positions_real_redis():
         response = json.loads(ws.receive_text())
 
         assert response["success"] is True
-        assert response["result"]["user_id"] is None  # No user_id in exchange-centric approach
+        assert (
+            response["result"]["user_id"] is None
+        )  # No user_id in exchange-centric approach
         assert response["result"]["count"] >= 2
         symbols = {p["symbol"] for p in response["result"]["positions"]}
         assert {"BTC/USDT", "ETH/USDT"}.issubset(symbols)

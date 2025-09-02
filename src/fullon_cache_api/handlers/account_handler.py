@@ -22,7 +22,6 @@ from typing import Any
 from fastapi import WebSocket, WebSocketDisconnect
 from fullon_log import get_component_logger  # type: ignore
 
-
 logger = get_component_logger("fullon.api.cache.accounts")
 
 
@@ -191,7 +190,10 @@ class AccountWebSocketHandler:
         # Support both user-centric and exchange-centric requests
         if user_id is None and exchange is None:
             await self.send_error(
-                websocket, request_id, "INVALID_PARAMS", "user_id or exchange parameter required"
+                websocket,
+                request_id,
+                "INVALID_PARAMS",
+                "user_id or exchange parameter required",
             )
             return
 
@@ -218,7 +220,7 @@ class AccountWebSocketHandler:
             for p in positions or []:
                 # If we have a user_id filter, skip positions that don't match
                 # (Note: Position model doesn't have user_id, so this is conceptually limited)
-                
+
                 # If we have an exchange filter, apply it
                 ex_id = getattr(p, "ex_id", None)
                 if exchange is not None and str(ex_id) != str(exchange):
@@ -227,7 +229,11 @@ class AccountWebSocketHandler:
                 volume = float(getattr(p, "volume", 0.0))
                 # Prefer explicit side from model; fallback to sign
                 side_attr = getattr(p, "side", None)
-                side = side_attr if side_attr in {"long", "short"} else ("long" if volume >= 0 else "short")
+                side = (
+                    side_attr
+                    if side_attr in {"long", "short"}
+                    else ("long" if volume >= 0 else "short")
+                )
                 items.append(
                     {
                         "symbol": getattr(p, "symbol", None),
@@ -277,11 +283,14 @@ class AccountWebSocketHandler:
     ) -> None:
         user_id = params.get("user_id")
         exchange = params.get("exchange")
-        
+
         # Support both user-centric and exchange-centric streaming
         if user_id is None and exchange is None:
             await self.send_error(
-                websocket, request_id, "INVALID_PARAMS", "user_id or exchange parameter required"
+                websocket,
+                request_id,
+                "INVALID_PARAMS",
+                "user_id or exchange parameter required",
             )
             return
 
@@ -289,7 +298,11 @@ class AccountWebSocketHandler:
         try:
             task = asyncio.create_task(
                 self._stream_position_updates(
-                    websocket, request_id, int(user_id) if user_id else None, exchange, stream_key
+                    websocket,
+                    request_id,
+                    int(user_id) if user_id else None,
+                    exchange,
+                    stream_key,
                 )
             )
             self.streaming_tasks[stream_key] = task
@@ -336,7 +349,7 @@ class AccountWebSocketHandler:
                     positions = await cache.get_positions(int(exchange))
                 else:
                     positions = await cache.get_all_positions()
-                    
+
                 await self._emit_position_list(
                     websocket, request_id, stream_key, positions, exchange
                 )
@@ -353,7 +366,7 @@ class AccountWebSocketHandler:
                         positions = await cache.get_positions(int(exchange))
                     else:
                         positions = await cache.get_all_positions()
-                        
+
                     current = {
                         f"{getattr(p,'symbol',None)}:{getattr(p,'ex_id',None)}": float(
                             getattr(p, "volume", 0.0)
@@ -390,7 +403,11 @@ class AccountWebSocketHandler:
 
             volume = float(getattr(p, "volume", 0.0))
             side_attr = getattr(p, "side", None)
-            side = side_attr if side_attr in {"long", "short"} else ("long" if volume >= 0 else "short")
+            side = (
+                side_attr
+                if side_attr in {"long", "short"}
+                else ("long" if volume >= 0 else "short")
+            )
             msg = {
                 "request_id": request_id,
                 "action": "position_update",

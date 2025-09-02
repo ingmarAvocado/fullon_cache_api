@@ -20,7 +20,6 @@ from typing import Any
 from fastapi import WebSocket, WebSocketDisconnect
 from fullon_log import get_component_logger  # type: ignore
 
-
 logger = get_component_logger("fullon.api.cache.trades")
 
 
@@ -206,7 +205,10 @@ class TradesWebSocketHandler:
                 stream_key=stream_key,
             )
             await self.send_error(
-                websocket, request_id, "INTERNAL_ERROR", "Failed to start trade streaming"
+                websocket,
+                request_id,
+                "INTERNAL_ERROR",
+                "Failed to start trade streaming",
             )
 
     async def _stream_trade_updates(
@@ -286,4 +288,3 @@ class TradesWebSocketHandler:
             if task and not task.done():
                 task.cancel()
         self.active_connections.pop(connection_id, None)
-

@@ -22,7 +22,6 @@ from typing import Any
 from fastapi import WebSocket, WebSocketDisconnect
 from fullon_log import get_component_logger  # type: ignore
 
-
 logger = get_component_logger("fullon.api.cache.orders")
 
 
@@ -71,7 +70,9 @@ class OrdersWebSocketHandler:
                 websocket, request_id, params, connection_id
             )
         elif action == "get_queue_length":
-            await self.handle_get_queue_length(websocket, request_id, params, connection_id)
+            await self.handle_get_queue_length(
+                websocket, request_id, params, connection_id
+            )
         elif action == "stream_order_queue":
             await self.handle_stream_order_queue(
                 websocket, request_id, params, connection_id
@@ -232,9 +233,7 @@ class OrdersWebSocketHandler:
             }
             await websocket.send_text(json.dumps(response))
         except Exception as exc:  # pragma: no cover - env dependent
-            logger.error(
-                "Get queue length failed", exchange=exchange, error=str(exc)
-            )
+            logger.error("Get queue length failed", exchange=exchange, error=str(exc))
             await self.send_error(
                 websocket, request_id, "CACHE_ERROR", "Failed to retrieve queue length"
             )
@@ -256,7 +255,9 @@ class OrdersWebSocketHandler:
         stream_key = f"{connection_id}:{request_id}"
         try:
             task = asyncio.create_task(
-                self._stream_queue_length(websocket, request_id, str(exchange), stream_key)
+                self._stream_queue_length(
+                    websocket, request_id, str(exchange), stream_key
+                )
             )
             self.streaming_tasks[stream_key] = task
 
@@ -312,7 +313,9 @@ class OrdersWebSocketHandler:
         except asyncio.CancelledError:  # pragma: no cover - cancellation timing
             logger.info("Order queue streaming cancelled", stream_key=stream_key)
         except Exception as exc:  # pragma: no cover - env dependent
-            logger.error("Order queue streaming error", error=str(exc), stream_key=stream_key)
+            logger.error(
+                "Order queue streaming error", error=str(exc), stream_key=stream_key
+            )
 
     async def cleanup_connection(self, connection_id: str) -> None:
         # Cancel and remove all streaming tasks for this connection
@@ -324,4 +327,3 @@ class OrdersWebSocketHandler:
             if task and not task.done():
                 task.cancel()
         self.active_connections.pop(connection_id, None)
-

@@ -23,7 +23,6 @@ from typing import Any
 from fastapi import WebSocket, WebSocketDisconnect
 from fullon_log import get_component_logger  # type: ignore
 
-
 logger = get_component_logger("fullon.api.cache.bots")
 
 
@@ -211,7 +210,10 @@ class BotWebSocketHandler:
             await websocket.send_text(json.dumps(response))
         except Exception as exc:  # pragma: no cover - env dependent
             logger.error(
-                "Is blocked check failed", exchange=exchange, symbol=symbol, error=str(exc)
+                "Is blocked check failed",
+                exchange=exchange,
+                symbol=symbol,
+                error=str(exc),
             )
             await self.send_error(
                 websocket, request_id, "CACHE_ERROR", "Failed to query blocking status"
@@ -224,7 +226,9 @@ class BotWebSocketHandler:
         params: dict[str, Any],
         connection_id: str,
     ) -> None:
-        logger.info("Get bots started", request_id=request_id, connection_id=connection_id)
+        logger.info(
+            "Get bots started", request_id=request_id, connection_id=connection_id
+        )
         try:
             from fullon_cache import BotCache  # type: ignore
 
@@ -265,14 +269,18 @@ class BotWebSocketHandler:
                 "action": "stream_bot_status",
                 "success": True,
                 "message": (
-                    f"Streaming started for bot {bot_id}" if bot_id else "Streaming started"
+                    f"Streaming started for bot {bot_id}"
+                    if bot_id
+                    else "Streaming started"
                 ),
                 "stream_key": stream_key,
             }
             await websocket.send_text(json.dumps(confirmation))
         except Exception as exc:  # pragma: no cover - env dependent
             logger.error(
-                "Bot streaming initialization failed", error=str(exc), stream_key=stream_key
+                "Bot streaming initialization failed",
+                error=str(exc),
+                stream_key=stream_key,
             )
             await self.send_error(
                 websocket, request_id, "INTERNAL_ERROR", "Failed to start bot streaming"
@@ -291,7 +299,11 @@ class BotWebSocketHandler:
                         bots = await cache.get_bots()
                         snapshot = bots or {}
                         if bot_id:
-                            snapshot = {bot_id: snapshot.get(bot_id)} if bot_id in snapshot else {}
+                            snapshot = (
+                                {bot_id: snapshot.get(bot_id)}
+                                if bot_id in snapshot
+                                else {}
+                            )
                     except Exception:
                         snapshot = last_snapshot or {}
 
@@ -324,4 +336,3 @@ class BotWebSocketHandler:
             if task and not task.done():
                 task.cancel()
         self.active_connections.pop(connection_id, None)
-

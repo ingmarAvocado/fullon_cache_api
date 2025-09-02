@@ -77,4 +77,3 @@ def test_stream_process_health_real_redis() -> None:
         assert conf["action"] == "stream_process_health"
 
         # Keep this integration test light: only validate stream setup
-

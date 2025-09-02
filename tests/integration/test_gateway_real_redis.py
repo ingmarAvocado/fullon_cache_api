@@ -39,10 +39,12 @@ def test_gateway_multi_endpoints_real_redis() -> None:
     try:
         from fullon_cache import (
             AccountCache,  # type: ignore
-            OrdersCache,  # type: ignore
             OHLCVCache,  # type: ignore
+            OrdersCache,  # type: ignore
         )
         from fullon_cache.tick_cache import TickCache  # type: ignore
+
+        from tests.factories.order import OrderFactory
         from tests.factories.ticker import TickerFactory
     except Exception as e:
         pytest.skip(f"Dependencies not available: {e}")
@@ -55,7 +57,9 @@ def test_gateway_multi_endpoints_real_redis() -> None:
     async def _seed_ticker() -> None:
         cache = TickCache()
         try:
-            tick = TickerFactory().create(symbol="BTC/USDT", exchange="binance", price=50123.45)
+            tick = TickerFactory().create(
+                symbol="BTC/USDT", exchange="binance", price=50123.45
+            )
             await cache.set_ticker(tick)  # type: ignore[arg-type]
         finally:
             await cache._cache.close()
@@ -73,22 +77,21 @@ def test_gateway_multi_endpoints_real_redis() -> None:
     # --- Seed OrdersCache ---
     async def _seed_orders(n: int = 2) -> None:
         cache = OrdersCache()
+        factory = OrderFactory()
         try:
             for _ in range(n):
                 order_id = f"ORD_{uuid.uuid4().hex[:6]}"
-                # Save minimal order representation using cache helper
-                await cache.save_order_data(
-                    "binance",
-                    {
-                        "ex_order_id": order_id,
-                        "symbol": "BTC/USDT",
-                        "side": "buy",
-                        "price": 50000.0,
-                        "volume": 0.1,
-                        "status": "open",
-                        "timestamp": time.time(),
-                    },
+                # Create proper fullon_orm Order model using factory
+                order = factory.create(
+                    ex_order_id=order_id,
+                    symbol="BTC/USDT",
+                    exchange="binance",
+                    side="buy",
+                    amount=0.1,
+                    price=50000.0,
+                    status="open",
                 )
+                await cache.save_order_data("binance", order)
         finally:
             await cache._cache.close()
 
@@ -106,7 +109,9 @@ def test_gateway_multi_endpoints_real_redis() -> None:
                 l = o * 0.99
                 c = o * 1.002
                 v = 100 + i
-                bars.append([float(ts), float(o), float(h), float(l), float(c), float(v)])
+                bars.append(
+                    [float(ts), float(o), float(h), float(l), float(c), float(v)]
+                )
                 ts += 60
                 price = c
             await cache.update_ohlcv_bars("BTC/USDT", "1m", bars)
@@ -182,4 +187,3 @@ def test_gateway_multi_endpoints_real_redis() -> None:
         resp = json.loads(ws.receive_text())
         assert resp["success"] is True
         assert isinstance(resp.get("result"), dict)
-
