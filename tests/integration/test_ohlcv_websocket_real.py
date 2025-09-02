@@ -30,7 +30,9 @@ def _flush_db() -> None:
         pass
 
 
-def _make_bars(start_ts: int, count: int = 10, base_price: float = 100.0) -> list[list[float]]:
+def _make_bars(
+    start_ts: int, count: int = 10, base_price: float = 100.0
+) -> list[list[float]]:
     bars: list[list[float]] = []
     ts = start_ts
     price = base_price
@@ -133,4 +135,3 @@ def test_stream_ohlcv_real_redis() -> None:
 
         # Keep this integration test light: only validate stream setup (like trades stream test)
         # Full update assertion is covered in the unit-ish test.
-

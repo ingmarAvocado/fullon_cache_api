@@ -50,16 +50,15 @@ class TradeFactory:
 
         # Create ORM Trade instance
         t = Trade()  # type: ignore[call-arg]
-        setattr(t, "trade_id", trade_id or int(time.time() * 1000) % 1000000)
-        setattr(t, "symbol", symbol)
-        setattr(t, "side", side)
-        setattr(t, "volume", float(volume))
-        setattr(t, "price", float(price))
-        setattr(t, "uid", uid or 1)
-        setattr(t, "ex_id", ex_id or 1)
-        setattr(t, "time", kwargs.get("time", time.time()))
+        t.trade_id = trade_id or int(time.time() * 1000) % 1000000
+        t.symbol = symbol
+        t.side = side
+        t.volume = float(volume)
+        t.price = float(price)
+        t.uid = uid or 1
+        t.ex_id = ex_id or 1
+        t.time = kwargs.get("time", time.time())
         # Optional analytics fields
-        setattr(t, "cost", kwargs.get("cost", float(volume) * float(price)))
-        setattr(t, "fee", kwargs.get("fee", 0.0))
+        t.cost = kwargs.get("cost", float(volume) * float(price))
+        t.fee = kwargs.get("fee", 0.0)
         return t
-

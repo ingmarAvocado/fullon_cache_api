@@ -11,6 +11,8 @@ Design constraints:
 - Degrades gracefully when `fullon_cache` is unavailable.
 """
 
+from __future__ import annotations
+
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Any, Optional
 

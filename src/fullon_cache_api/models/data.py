@@ -8,9 +8,8 @@ optimized for FastAPI WebSocket JSON serialization with fullon_log integration.
 import time
 from decimal import Decimal
 from typing import Any
+
 from fullon_log import get_component_logger  # type: ignore
-
-
 from pydantic import BaseModel, Field, validator
 
 # Initialize component logger for data models

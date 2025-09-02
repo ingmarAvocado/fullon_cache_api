@@ -32,6 +32,7 @@ def _flush_db() -> None:
 def test_get_trades_real_redis() -> None:
     try:
         from fullon_cache.trades_cache import TradesCache  # type: ignore
+
         from tests.factories.trade import TradeFactory
     except Exception:
         pytest.skip("fullon_cache/fullon_orm not available in environment")
@@ -48,8 +49,12 @@ def test_get_trades_real_redis() -> None:
         cache = TradesCache()
         try:
             # Push two trades for the symbol
-            trade1 = factory.create(symbol=symbol, exchange=exchange, side="buy", volume=0.1, price=50000)
-            trade2 = factory.create(symbol=symbol, exchange=exchange, side="sell", volume=0.05, price=51000)
+            trade1 = factory.create(
+                symbol=symbol, exchange=exchange, side="buy", volume=0.1, price=50000
+            )
+            trade2 = factory.create(
+                symbol=symbol, exchange=exchange, side="sell", volume=0.05, price=51000
+            )
             await cache.push_trade(exchange, trade1)  # type: ignore[arg-type]
             await cache.push_trade(exchange, trade2)  # type: ignore[arg-type]
         finally:
@@ -76,7 +81,6 @@ def test_get_trades_real_redis() -> None:
 
 def test_stream_trade_updates_real_redis() -> None:
     try:
-        from fullon_cache.trades_cache import TradesCache  # type: ignore
         from tests.factories.trade import TradeFactory
     except Exception:
         pytest.skip("fullon_cache/fullon_orm not available in environment")
@@ -106,12 +110,11 @@ def test_stream_trade_updates_real_redis() -> None:
         # For now, just test that streaming setup works (confirmation received)
         # Full streaming test would need proper async test setup
         # The confirmation already proves the WebSocket stream endpoint works
-        
+
         # This test verifies:
         # 1. WebSocket accepts stream_trade_updates action
         # 2. Handler responds with success confirmation
         # 3. Stream setup completes without error
-        
+
         # Note: Testing actual streaming data would require async test client
         # or integration with real trade data pipeline
-

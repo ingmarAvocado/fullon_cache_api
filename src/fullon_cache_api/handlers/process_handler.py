@@ -22,7 +22,6 @@ from typing import Any
 from fastapi import WebSocket, WebSocketDisconnect
 from fullon_log import get_component_logger  # type: ignore
 
-
 logger = get_component_logger("fullon.api.cache.process")
 
 
@@ -35,7 +34,9 @@ class ProcessWebSocketHandler:
         await websocket.accept()
         self.active_connections[connection_id] = websocket
         logger.info(
-            "Process WebSocket connected", connection_id=connection_id, handler="process"
+            "Process WebSocket connected",
+            connection_id=connection_id,
+            handler="process",
         )
 
         try:
@@ -67,7 +68,9 @@ class ProcessWebSocketHandler:
         params = data.get("params", {}) or {}
 
         if action == "get_system_health":
-            await self.handle_get_system_health(websocket, request_id, params, connection_id)
+            await self.handle_get_system_health(
+                websocket, request_id, params, connection_id
+            )
         elif action == "get_active_processes":
             await self.handle_get_active_processes(
                 websocket, request_id, params, connection_id
@@ -120,7 +123,7 @@ class ProcessWebSocketHandler:
                     health = await get_health()
                 else:
                     # Fallback: synthesize minimal health data
-                    processes = await getattr(cache, "get_active_processes")()
+                    processes = await cache.get_active_processes()
                     health = {
                         "overall_status": "healthy",
                         "active_processes": len(processes or []),
@@ -135,7 +138,9 @@ class ProcessWebSocketHandler:
             }
             await websocket.send_text(json.dumps(response))
         except Exception as exc:  # pragma: no cover - env dependent
-            logger.error("Get system health failed", error=str(exc), request_id=request_id)
+            logger.error(
+                "Get system health failed", error=str(exc), request_id=request_id
+            )
             await self.send_error(
                 websocket, request_id, "CACHE_ERROR", "Failed to retrieve system health"
             )
@@ -165,7 +170,7 @@ class ProcessWebSocketHandler:
 
             items: list[dict[str, Any]] = []
             async with ProcessCache() as cache:  # type: ignore[call-arg]
-                get_active = getattr(cache, "get_active_processes")
+                get_active = cache.get_active_processes
                 kwargs: dict[str, Any] = {}
                 if process_type is not None:
                     kwargs["process_type"] = process_type
@@ -258,11 +263,13 @@ class ProcessWebSocketHandler:
             async with ProcessCache() as cache:  # type: ignore[call-arg]
                 while True:
                     try:
-                        get_active = getattr(cache, "get_active_processes")
+                        get_active = cache.get_active_processes
                         processes = await get_active() if callable(get_active) else []
                         active_count = len(processes or [])
                     except Exception:
-                        active_count = last_active_count if last_active_count is not None else 0
+                        active_count = (
+                            last_active_count if last_active_count is not None else 0
+                        )
 
                     if active_count != last_active_count:
                         last_active_count = active_count
@@ -295,4 +302,3 @@ class ProcessWebSocketHandler:
             if task and not task.done():
                 task.cancel()
         self.active_connections.pop(connection_id, None)
-

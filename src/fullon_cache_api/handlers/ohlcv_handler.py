@@ -20,7 +20,6 @@ from typing import Any
 from fastapi import WebSocket, WebSocketDisconnect
 from fullon_log import get_component_logger  # type: ignore
 
-
 logger = get_component_logger("fullon.api.cache.ohlcv")
 
 
@@ -69,9 +68,7 @@ class OHLCVWebSocketHandler:
                 websocket, request_id, params, connection_id
             )
         elif action == "stream_ohlcv":
-            await self.handle_stream_ohlcv(
-                websocket, request_id, params, connection_id
-            )
+            await self.handle_stream_ohlcv(websocket, request_id, params, connection_id)
         else:
             await self.send_error(
                 websocket,
@@ -227,7 +224,10 @@ class OHLCVWebSocketHandler:
                 stream_key=stream_key,
             )
             await self.send_error(
-                websocket, request_id, "INTERNAL_ERROR", "Failed to start OHLCV streaming"
+                websocket,
+                request_id,
+                "INTERNAL_ERROR",
+                "Failed to start OHLCV streaming",
             )
 
     async def _stream_ohlcv_updates(
@@ -263,7 +263,9 @@ class OHLCVWebSocketHandler:
                         else:
                             # Object-like
                             payload_bar = [
-                                float(getattr(bar, "timestamp", getattr(bar, "time", 0.0))),
+                                float(
+                                    getattr(bar, "timestamp", getattr(bar, "time", 0.0))
+                                ),
                                 float(getattr(bar, "open", 0.0)),
                                 float(getattr(bar, "high", 0.0)),
                                 float(getattr(bar, "low", 0.0)),
@@ -308,7 +310,11 @@ class OHLCVWebSocketHandler:
 
                         if latest:
                             bar = latest[0]
-                            ts = float(bar[0]) if isinstance(bar, (list, tuple)) else None
+                            ts = (
+                                float(bar[0])
+                                if isinstance(bar, (list, tuple))
+                                else None
+                            )
                             if ts is not None and ts != last_ts:
                                 msg = {
                                     "request_id": request_id,
@@ -346,4 +352,3 @@ class OHLCVWebSocketHandler:
             if task and not task.done():
                 task.cancel()
         self.active_connections.pop(connection_id, None)
-

@@ -16,7 +16,6 @@ from typing import Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fullon_log import get_component_logger  # type: ignore
 
-
 from ..base import CacheHealthChecker
 from ..models import (
     CacheRequest,

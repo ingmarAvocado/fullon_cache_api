@@ -6,19 +6,16 @@ No REST endpoints are exposed; use WebSocket for all interactions.
 """
 
 from fastapi import FastAPI
-
-
 from fullon_log import get_component_logger  # type: ignore
-
 
 from .routers.accounts import router as accounts_router
 from .routers.bots import router as bots_router
-from .routers.orders import router as orders_router
-from .routers.trades import router as trades_router
 from .routers.ohlcv import router as ohlcv_router
-from .routers.tickers import router as tickers_router
-from .routers.websocket import router as ws_router
+from .routers.orders import router as orders_router
 from .routers.process import router as process_router
+from .routers.tickers import router as tickers_router
+from .routers.trades import router as trades_router
+from .routers.websocket import router as ws_router
 
 logger = get_component_logger("fullon.api.cache.app")
 

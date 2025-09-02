@@ -122,4 +122,3 @@ def test_get_queue_length_unit_real_redis():
         assert response["result"]["exchange"] == exchange
         assert isinstance(response["result"]["queue_length"], int)
         assert response["result"]["queue_length"] >= 2
-

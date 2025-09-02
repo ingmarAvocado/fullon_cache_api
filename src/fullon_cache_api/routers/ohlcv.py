@@ -13,4 +13,3 @@ ohlcv_handler = OHLCVWebSocketHandler()
 @router.websocket("/ws/ohlcv/{connection_id}")
 async def ohlcv_websocket_endpoint(websocket: WebSocket, connection_id: str) -> None:
     await ohlcv_handler.handle_connection(websocket, connection_id)
-

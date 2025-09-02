@@ -1,7 +1,6 @@
 """Ticker factory for REAL Redis testing (NO MOCKS)."""
 
 import time
-from decimal import Decimal
 
 try:
     from fullon_orm.models import Tick  # type: ignore

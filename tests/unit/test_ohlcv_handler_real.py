@@ -28,7 +28,9 @@ def _flush_db() -> None:
         pass
 
 
-def _make_bars(start_ts: int, count: int = 10, base_price: float = 100.0) -> list[list[float]]:
+def _make_bars(
+    start_ts: int, count: int = 10, base_price: float = 100.0
+) -> list[list[float]]:
     bars: list[list[float]] = []
     ts = start_ts
     price = base_price
@@ -95,7 +97,9 @@ def test_get_latest_ohlcv_bars_not_found_unit_real_redis() -> None:
         try:
             from fullon_cache import OHLCVCache  # type: ignore  # noqa: F401
         except Exception:
-            from fullon_cache.ohlcv_cache import OHLCVCache  # type: ignore  # noqa: F401
+            from fullon_cache.ohlcv_cache import (
+                OHLCVCache,  # type: ignore  # noqa: F401
+            )
     except Exception:
         pytest.skip("fullon_cache not available in environment")
 
@@ -170,7 +174,7 @@ def test_stream_ohlcv_unit_real_redis() -> None:
                 await cache._cache.close()
 
         loop = asyncio.get_event_loop()
-        loop.create_task(_mutate())
+        task = loop.create_task(_mutate())
 
         updates: list[dict] = []
         for _ in range(6):
@@ -180,8 +184,12 @@ def test_stream_ohlcv_unit_real_redis() -> None:
                 break
 
         assert len(updates) >= 1
+        # Ensure background mutation task is finalized to avoid warnings
+        try:
+            loop.run_until_complete(task)
+        except Exception:
+            pass
         upd = updates[0]["result"]
         assert upd["symbol"] == symbol
         assert upd["timeframe"] == timeframe
         assert isinstance(upd["bar"], list) and len(upd["bar"]) == 6
-

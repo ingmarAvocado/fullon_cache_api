@@ -84,4 +84,3 @@ def test_is_blocked_unit_real_redis():
         assert response["success"] is True
         assert response["result"]["is_blocked"] is True
         assert response["result"]["blocked_by"] == "BOT_X"
-
