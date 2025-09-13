@@ -54,7 +54,7 @@ try:  # pragma: no cover - environment dependent
 except Exception:
     pass
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # Pydantic models for FastAPI WebSocket operations
 # FastAPI WebSocket infrastructure (will be implemented in Issue #4)

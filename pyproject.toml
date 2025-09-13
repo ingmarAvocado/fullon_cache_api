@@ -1,6 +1,6 @@
 [project]
 name = "fullon_cache_api"
-version = "0.1.0"
+version = "0.1.1"
 description = "FastAPI Gateway for fullon_cache with LRRS-compliant architecture"
 authors = [{name = "ingmarAvocado", email = "ingmar@example.com"}]
 readme = "README.md"
@@ -11,7 +11,7 @@ dependencies = [
     "httpx>=0.25.2",
     "python-dotenv>=1.0.0",
     "websockets>=12.0",
-    "fullon_cache @ git+ssh://git@github.com/ingmarAvocado/fullon_cache.git",
+    "fullon_cache @ git+ssh://git@github.com/ingmarAvocado/fullon_cache.git@main",
     "pytest-xdist (>=3.8.0,<4.0.0)",
 ]
 
