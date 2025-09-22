@@ -38,7 +38,7 @@ async with fullon_cache_api(ws_url="ws://localhost:8000") as handler:
 python run_all.py --list
 ```
 
-### Run All Examples
+### Run All Examples (Mock)
 ```bash
 # Run all examples
 python run_all.py
@@ -50,7 +50,7 @@ python run_all.py --quick
 python run_all.py --verbose
 ```
 
-### Run Specific Examples
+### Run Specific Examples (Mock)
 ```bash
 # Run only ticker example
 python run_all.py --only tick_cache
@@ -65,7 +65,7 @@ python run_all.py --exclude process_cache
 python run_all.py --only tick_cache account_cache --quick --verbose
 ```
 
-### Run Individual Examples
+### Run Individual Examples (Mock)
 ```bash
 # Basic usage demo
 python example_tick_cache.py --operations all --verbose
@@ -79,6 +79,32 @@ python example_account_cache.py --operations basic --accounts 3
 # Bot coordination
 python example_bot_cache.py --operations coordination --duration 15
 ```
+
+## 🔌 Real Redis Examples
+
+Real mode connects to the running FastAPI WebSocket app and seeds Redis using fullon_cache before each demo.
+
+Prereqs:
+- Start server: `make dev` (ws at `ws://127.0.0.1:8000`)
+- Configure `.env` with Redis (`REDIS_*` or `CACHE_*`)
+- Install real deps: `fullon_cache` and `fullon_orm` (required; no fallbacks)
+
+Commands:
+```bash
+# Run the real suite (tickers, orders, ohlcv)
+python run_all.py --real --verbose
+
+# Ticker only
+python ticker_websocket_real.py
+
+# Orders only
+python orders_websocket_real.py
+
+# OHLCV only
+python ohlcv_websocket_real.py
+```
+
+Environment overrides (optional): `EX_WS_URL`, `EX_CLIENT`, `EX_SYMBOL`, `EX_EXCHANGE`, `EX_TIMEFRAME`.
 
 ## 🔧 Current Status: WORKING WEBSOCKET SERVER
 
@@ -94,10 +120,9 @@ python example_bot_cache.py --operations coordination --duration 15
 - ✅ **Working ticker operations (get_ticker, set_ticker, streaming)**
 
 ### Next Phase:
-- 🔧 **Integrate with fullon_cache for other examples**
-- 🔧 **Test database integration** 
-- 🔧 **Live Redis cache operations**
-- 🔧 **Real-time pub/sub streaming**
+- 🔧 Expand real examples to Accounts/Bots/Trades/Process
+- 🔧 Add richer seeding via example factories
+- 🔧 Live Redis pub/sub streaming validation
 
 ## 📋 Example CLI Options
 

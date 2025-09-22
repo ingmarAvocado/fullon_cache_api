@@ -99,16 +99,24 @@ async def main():
     parser.add_argument(
         "--list", action="store_true", help="List all available examples and exit"
     )
+    parser.add_argument(
+        "--real",
+        action="store_true",
+        help="Run real Redis WebSocket examples (requires server + .env)",
+    )
 
     args = parser.parse_args()
 
     print("🚀 fullon_cache_api - Run All WebSocket Examples")
     print("===============================================")
-    print("📝 This runs all cache API examples to show WebSocket patterns")
-    print("🔧 Currently uses MOCK data - will use real server later")
+    print("📝 This runs cache API examples to show WebSocket patterns")
+    if args.real:
+        print("🔌 Real mode: connects to running FastAPI WS + Redis (from .env)")
+    else:
+        print("🔧 Mock mode: local demo flows (no Redis required)")
 
     # Define all examples to run
-    examples = [
+    mock_examples = [
         {
             "script": "basic_usage.py",
             "args": [],
@@ -176,16 +184,39 @@ async def main():
         },
     ]
 
+    real_examples = [
+        {
+            "script": "ticker_websocket_real.py",
+            "args": [],
+            "description": "Real Redis: Ticker get + stream",
+        },
+        {
+            "script": "orders_websocket_real.py",
+            "args": [],
+            "description": "Real Redis: Orders queue length + stream",
+        },
+        {
+            "script": "ohlcv_websocket_real.py",
+            "args": [],
+            "description": "Real Redis: OHLCV latest bars + stream",
+        },
+    ]
+
+    examples = real_examples if args.real else mock_examples
+
     # Handle --list option
     if args.list:
         print("\n📋 Available Examples:")
-        for i, example in enumerate(examples, 1):
+        for i, example in enumerate(mock_examples if not args.real else real_examples, 1):
             script_name = example["script"].replace("example_", "").replace(".py", "")
             print(f"   {i:2d}. {script_name:<12} - {example['description']}")
         print("\nUsage examples:")
-        print("   python run_all.py --only tick_cache")
-        print("   python run_all.py --only tick_cache bot_cache --quick")
-        print("   python run_all.py --exclude process_cache --verbose")
+        if args.real:
+            print("   python run_all.py --real --verbose")
+        else:
+            print("   python run_all.py --only tick_cache")
+            print("   python run_all.py --only tick_cache bot_cache --quick")
+            print("   python run_all.py --exclude process_cache --verbose")
         return
 
     # Filter examples based on --only or --exclude
@@ -210,7 +241,7 @@ async def main():
     results = []
     start_time = time.time()
 
-    print(f"\n📋 Running {len(examples)} examples...")
+    print(f"\n📋 Running {len(examples)} examples ({'REAL' if args.real else 'MOCK'})...")
 
     for i, example in enumerate(examples, 1):
         print(f"\n{'='*50}")

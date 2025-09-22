@@ -1,10 +1,10 @@
 [project]
 name = "fullon_cache_api"
-version = "0.1.1"
+version = "0.1.2"
 description = "FastAPI Gateway for fullon_cache with LRRS-compliant architecture"
 authors = [{name = "ingmarAvocado", email = "ingmar@example.com"}]
 readme = "README.md"
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.13,<4.0"
 dependencies = [
     "fastapi>=0.104.1",
     "uvicorn[standard]>=0.24.0",
