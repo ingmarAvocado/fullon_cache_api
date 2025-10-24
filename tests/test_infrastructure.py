@@ -304,7 +304,7 @@ class TestImports:
         """Test version is correctly imported."""
         from fullon_cache_api import __version__
 
-        assert __version__ == "0.1.0"
+        assert __version__ == "0.1.1"
 
     def test_all_expected_imports_available(self):
         """Test all expected infrastructure imports are available."""

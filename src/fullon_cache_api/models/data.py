@@ -10,7 +10,7 @@ from decimal import Decimal
 from typing import Any
 
 from fullon_log import get_component_logger  # type: ignore
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # Initialize component logger for data models
 logger = get_component_logger("fullon.api.cache.models.data")
@@ -38,11 +38,9 @@ class TickerData(BaseModel):
             has_price=self.price is not None,
         )
 
-    class Config:
-        """Pydantic config for FastAPI integration."""
-
-        json_encoders = {Decimal: lambda v: float(v) if v is not None else None}
-        schema_extra = {
+    model_config = ConfigDict(
+        json_encoders={Decimal: lambda v: float(v) if v is not None else None},
+        json_schema_extra={
             "example": {
                 "symbol": "BTC/USDT",
                 "exchange": "binance",
@@ -55,6 +53,7 @@ class TickerData(BaseModel):
                 "timestamp": 1627846261.75,
             }
         }
+    )
 
 
 class PositionData(BaseModel):
@@ -71,7 +70,8 @@ class PositionData(BaseModel):
     realized_pnl: Decimal | None = Field(None, description="Realized PnL")
     timestamp: float = Field(default_factory=time.time, description="Data timestamp")
 
-    @validator("side")
+    @field_validator("side")
+    @classmethod
     def validate_side(cls, v: Any) -> Any:
         """Validate position side."""
         if v.lower() not in ["long", "short"]:
@@ -89,11 +89,9 @@ class PositionData(BaseModel):
             side=self.side,
         )
 
-    class Config:
-        """Pydantic config for FastAPI integration."""
-
-        json_encoders = {Decimal: lambda v: float(v) if v is not None else None}
-        schema_extra = {
+    model_config = ConfigDict(
+        json_encoders={Decimal: lambda v: float(v) if v is not None else None},
+        json_schema_extra={
             "example": {
                 "user_id": 1,
                 "exchange": "binance",
@@ -107,6 +105,7 @@ class PositionData(BaseModel):
                 "timestamp": 1627846261.75,
             }
         }
+    )
 
 
 class BalanceData(BaseModel):
@@ -120,12 +119,14 @@ class BalanceData(BaseModel):
     total: Decimal | None = Field(None, description="Total balance")
     timestamp: float = Field(default_factory=time.time, description="Data timestamp")
 
-    @validator("total", always=True)
-    def calculate_total(cls, v: Any, values: dict[str, Any]) -> Any:
+    @model_validator(mode="before")
+    @classmethod
+    def calculate_total(cls, data: Any) -> Any:
         """Calculate total balance if not provided."""
-        if v is None and "available" in values and "locked" in values:
-            return values["available"] + values["locked"]
-        return v
+        if isinstance(data, dict):
+            if data.get("total") is None and "available" in data and "locked" in data:
+                data["total"] = data["available"] + data["locked"]
+        return data
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
@@ -137,11 +138,9 @@ class BalanceData(BaseModel):
             total=float(self.total) if self.total else None,
         )
 
-    class Config:
-        """Pydantic config for FastAPI integration."""
-
-        json_encoders = {Decimal: lambda v: float(v) if v is not None else None}
-        schema_extra = {
+    model_config = ConfigDict(
+        json_encoders={Decimal: lambda v: float(v) if v is not None else None},
+        json_schema_extra={
             "example": {
                 "user_id": 1,
                 "exchange": "binance",
@@ -152,6 +151,7 @@ class BalanceData(BaseModel):
                 "timestamp": 1627846261.75,
             }
         }
+    )
 
 
 class OrderData(BaseModel):
@@ -177,7 +177,8 @@ class OrderData(BaseModel):
         default_factory=time.time, description="Last update timestamp"
     )
 
-    @validator("side")
+    @field_validator("side")
+    @classmethod
     def validate_side(cls, v: Any) -> Any:
         """Validate order side."""
         if v.lower() not in ["buy", "sell"]:
@@ -185,7 +186,8 @@ class OrderData(BaseModel):
             raise ValueError(f"Invalid order side: {v}")
         return v.lower()
 
-    @validator("type")
+    @field_validator("type")
+    @classmethod
     def validate_type(cls, v: Any) -> Any:
         """Validate order type."""
         allowed_types = ["market", "limit", "stop", "stop_limit"]
@@ -205,11 +207,9 @@ class OrderData(BaseModel):
             status=self.status,
         )
 
-    class Config:
-        """Pydantic config for FastAPI integration."""
-
-        json_encoders = {Decimal: lambda v: float(v) if v is not None else None}
-        schema_extra = {
+    model_config = ConfigDict(
+        json_encoders={Decimal: lambda v: float(v) if v is not None else None},
+        json_schema_extra={
             "example": {
                 "order_id": "order_123456",
                 "user_id": 1,
@@ -226,6 +226,7 @@ class OrderData(BaseModel):
                 "updated_at": 1627846261.85,
             }
         }
+    )
 
 
 class TradeData(BaseModel):
@@ -242,7 +243,8 @@ class TradeData(BaseModel):
     fee_asset: str | None = Field(None, description="Fee asset")
     timestamp: float = Field(default_factory=time.time, description="Trade timestamp")
 
-    @validator("side")
+    @field_validator("side")
+    @classmethod
     def validate_side(cls, v: Any) -> Any:
         """Validate trade side."""
         if v.lower() not in ["buy", "sell"]:
@@ -260,11 +262,9 @@ class TradeData(BaseModel):
             side=self.side,
         )
 
-    class Config:
-        """Pydantic config for FastAPI integration."""
-
-        json_encoders = {Decimal: lambda v: float(v) if v is not None else None}
-        schema_extra = {
+    model_config = ConfigDict(
+        json_encoders={Decimal: lambda v: float(v) if v is not None else None},
+        json_schema_extra={
             "example": {
                 "trade_id": "trade_123456",
                 "user_id": 1,
@@ -278,6 +278,7 @@ class TradeData(BaseModel):
                 "timestamp": 1627846261.75,
             }
         }
+    )
 
 
 class OHLCVData(BaseModel):
@@ -303,11 +304,9 @@ class OHLCVData(BaseModel):
             timestamp=self.timestamp,
         )
 
-    class Config:
-        """Pydantic config for FastAPI integration."""
-
-        json_encoders = {Decimal: lambda v: float(v) if v is not None else None}
-        schema_extra = {
+    model_config = ConfigDict(
+        json_encoders={Decimal: lambda v: float(v) if v is not None else None},
+        json_schema_extra={
             "example": {
                 "symbol": "BTC/USDT",
                 "exchange": "binance",
@@ -320,6 +319,7 @@ class OHLCVData(BaseModel):
                 "volume": 123.45,
             }
         }
+    )
 
 
 class ProcessData(BaseModel):
@@ -346,10 +346,8 @@ class ProcessData(BaseModel):
             pid=self.pid,
         )
 
-    class Config:
-        """Pydantic config for FastAPI integration."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "process_id": "fullon_bot_1",
                 "name": "Trading Bot",
@@ -361,6 +359,7 @@ class ProcessData(BaseModel):
                 "last_seen": 1627846261.75,
             }
         }
+    )
 
 
 class BotData(BaseModel):
@@ -388,10 +387,8 @@ class BotData(BaseModel):
             is_blocked=self.is_blocked,
         )
 
-    class Config:
-        """Pydantic config for FastAPI integration."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "bot_id": "bot_123",
                 "user_id": 1,
@@ -403,6 +400,7 @@ class BotData(BaseModel):
                 "last_activity": 1627846261.75,
             }
         }
+    )
 
 
 class HealthData(BaseModel):
@@ -425,10 +423,8 @@ class HealthData(BaseModel):
             uptime=self.uptime,
         )
 
-    class Config:
-        """Pydantic config for FastAPI integration."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "status": "healthy",
                 "services": {
@@ -441,3 +437,4 @@ class HealthData(BaseModel):
                 "version": "1.0.0",
             }
         }
+    )

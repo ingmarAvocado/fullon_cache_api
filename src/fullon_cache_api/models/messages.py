@@ -14,7 +14,7 @@ import uuid
 from typing import Any
 
 from fullon_log import get_component_logger  # type: ignore
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # Initialize component logger for message models
 logger = get_component_logger("fullon.api.cache.models.messages")
@@ -69,7 +69,8 @@ class CacheRequest(BaseModel):
     )
     timestamp: float = Field(default_factory=time.time, description="Request timestamp")
 
-    @validator("operation")
+    @field_validator("operation")
+    @classmethod
     def validate_operation(cls, v: str) -> str:
         """Validate FastAPI WebSocket operation names."""
         if v not in ALLOWED_OPERATIONS:
@@ -92,10 +93,8 @@ class CacheRequest(BaseModel):
             params_count=len(self.params),
         )
 
-    class Config:
-        """Pydantic config for FastAPI WebSocket integration."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "request_id": "123e4567-e89b-12d3-a456-426614174000",
                 "operation": "get_ticker",
@@ -103,6 +102,7 @@ class CacheRequest(BaseModel):
                 "timestamp": 1627846261.75,
             }
         }
+    )
 
 
 class CacheResponse(BaseModel):
@@ -130,10 +130,8 @@ class CacheResponse(BaseModel):
             has_error=self.error is not None,
         )
 
-    class Config:
-        """Pydantic config for FastAPI WebSocket integration."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "request_id": "123e4567-e89b-12d3-a456-426614174000",
                 "success": True,
@@ -147,6 +145,7 @@ class CacheResponse(BaseModel):
                 "latency_ms": 15.2,
             }
         }
+    )
 
 
 class StreamMessage(BaseModel):
@@ -169,10 +168,8 @@ class StreamMessage(BaseModel):
             sequence=self.sequence,
         )
 
-    class Config:
-        """Pydantic config for FastAPI WebSocket streaming."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "type": "ticker_update",
                 "data": {
@@ -187,6 +184,7 @@ class StreamMessage(BaseModel):
                 "sequence": 12345,
             }
         }
+    )
 
 
 class ErrorMessage(BaseModel):
@@ -207,10 +205,8 @@ class ErrorMessage(BaseModel):
             error=self.error,
         )
 
-    class Config:
-        """Pydantic config for FastAPI WebSocket errors."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "request_id": "123e4567-e89b-12d3-a456-426614174000",
                 "error": "Cache operation failed",
@@ -219,6 +215,7 @@ class ErrorMessage(BaseModel):
                 "details": {"service": "redis", "timeout": "5s"},
             }
         }
+    )
 
 
 # Error code constants for FastAPI WebSocket operations
