@@ -13,22 +13,6 @@ from starlette.testclient import TestClient
 pytestmark = [pytest.mark.integration, pytest.mark.redis]
 
 
-def _flush_db() -> None:
-    try:
-        from fullon_cache import BaseCache  # type: ignore
-
-        async def _do() -> None:
-            cache = BaseCache()
-            async with cache._redis_context() as redis:
-                await redis.flushdb()
-            await cache.close()
-
-        asyncio.get_event_loop().run_until_complete(_do())
-    except Exception:
-        # Best effort cleanup; tests still run if flush not possible
-        pass
-
-
 def test_get_trades_real_redis() -> None:
     try:
         from fullon_cache.trades_cache import TradesCache  # type: ignore
@@ -39,7 +23,6 @@ def test_get_trades_real_redis() -> None:
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     exchange = "binance"
     symbol = f"BTC/{uuid.uuid4().hex[:4]}USDT"
@@ -87,7 +70,6 @@ def test_stream_trade_updates_real_redis() -> None:
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     exchange = "binance"
     symbol = f"ETH/{uuid.uuid4().hex[:4]}USDT"

@@ -19,22 +19,6 @@ from starlette.testclient import TestClient
 pytestmark = [pytest.mark.integration, pytest.mark.redis]
 
 
-def _flush_db() -> None:
-    try:
-        from fullon_cache import BaseCache  # type: ignore
-
-        async def _do() -> None:
-            cache = BaseCache()
-            async with cache._redis_context() as redis:
-                await redis.flushdb()
-            await cache.close()
-
-        asyncio.get_event_loop().run_until_complete(_do())
-    except Exception:
-        # Best effort cleanup
-        pass
-
-
 def test_gateway_multi_endpoints_real_redis() -> None:
     try:
         from fullon_cache import (
@@ -51,7 +35,6 @@ def test_gateway_multi_endpoints_real_redis() -> None:
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     # --- Seed TickCache ---
     async def _seed_ticker() -> None:

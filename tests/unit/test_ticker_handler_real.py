@@ -10,23 +10,6 @@ from starlette.testclient import TestClient
 pytestmark = [pytest.mark.redis]
 
 
-def _flush_db():
-    try:
-        from fullon_cache import BaseCache  # type: ignore
-
-        async def _do():
-            cache = BaseCache()
-            async with cache._redis_context() as redis:
-                await redis.flushdb()
-            await cache.close()
-
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(_do())
-    except Exception:
-        pass
-
-
 def test_get_all_tickers_real_redis():
     try:
         from fullon_cache import TickCache  # type: ignore
@@ -35,7 +18,6 @@ def test_get_all_tickers_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     exchange = "binance"
     symbols = [f"BTC/{uuid.uuid4().hex[:4]}USDT", f"ETH/{uuid.uuid4().hex[:4]}USDT"]

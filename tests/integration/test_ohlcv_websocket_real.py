@@ -14,22 +14,6 @@ from starlette.testclient import TestClient
 pytestmark = [pytest.mark.integration, pytest.mark.redis]
 
 
-def _flush_db() -> None:
-    try:
-        from fullon_cache import BaseCache  # type: ignore
-
-        async def _do() -> None:
-            cache = BaseCache()
-            async with cache._redis_context() as redis:
-                await redis.flushdb()
-            await cache.close()
-
-        asyncio.get_event_loop().run_until_complete(_do())
-    except Exception:
-        # Best effort cleanup; tests still run if flush not possible
-        pass
-
-
 def _make_bars(
     start_ts: int, count: int = 10, base_price: float = 100.0
 ) -> list[list[float]]:
@@ -59,7 +43,6 @@ def test_get_latest_ohlcv_bars_real_redis() -> None:
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     symbol = f"BTC/{uuid.uuid4().hex[:4]}USDT"
     timeframe = "1m"
@@ -103,7 +86,6 @@ def test_stream_ohlcv_real_redis() -> None:
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     symbol = f"ETH/{uuid.uuid4().hex[:4]}USDT"
     timeframe = "1m"

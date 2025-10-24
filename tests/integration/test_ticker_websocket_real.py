@@ -10,28 +10,9 @@ from starlette.testclient import TestClient
 pytestmark = [pytest.mark.integration, pytest.mark.redis]
 
 
-def _flush_db():
-    try:
-        from fullon_cache import BaseCache  # type: ignore
-
-        async def _do():
-            cache = BaseCache()
-            async with cache._redis_context() as redis:
-                await redis.flushdb()
-            await cache.close()
-
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(_do())
-    except Exception:
-        # Best effort cleanup; tests still run if flush not possible
-        pass
-
-
 def test_ticker_not_found_real_redis():
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     with client.websocket_connect("/ws/tickers/not_found") as ws:
         request = {
@@ -57,7 +38,6 @@ def test_get_ticker_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     symbol = f"BTC/{uuid.uuid4().hex[:6]}USDT"
     exchange = "binance"

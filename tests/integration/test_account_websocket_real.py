@@ -10,22 +10,6 @@ from starlette.testclient import TestClient
 pytestmark = [pytest.mark.integration, pytest.mark.redis]
 
 
-def _flush_db():
-    try:
-        from fullon_cache import BaseCache  # type: ignore
-
-        async def _do():
-            cache = BaseCache()
-            async with cache._redis_context() as redis:
-                await redis.flushdb()
-            await cache.close()
-
-        asyncio.get_event_loop().run_until_complete(_do())
-    except Exception:
-        # Best effort cleanup
-        pass
-
-
 def test_get_balance_real_redis():
     try:
         from fullon_cache import AccountCache  # type: ignore
@@ -34,7 +18,6 @@ def test_get_balance_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     # Seed balance via AccountCache
     async def _seed():
@@ -75,7 +58,6 @@ def test_get_positions_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     # Seed positions
     async def _seed():
@@ -133,7 +115,6 @@ def test_stream_positions_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     user_id = 789
 

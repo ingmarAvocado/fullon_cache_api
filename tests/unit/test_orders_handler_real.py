@@ -11,21 +11,6 @@ from starlette.testclient import TestClient
 pytestmark = [pytest.mark.redis]
 
 
-def _flush_db():
-    try:
-        from fullon_cache import BaseCache  # type: ignore
-
-        async def _do():
-            cache = BaseCache()
-            async with cache._redis_context() as redis:
-                await redis.flushdb()
-            await cache.close()
-
-        asyncio.get_event_loop().run_until_complete(_do())
-    except Exception:
-        pass
-
-
 def test_get_order_status_unit_real_redis():
     try:
         from fullon_cache import OrdersCache  # type: ignore
@@ -34,7 +19,6 @@ def test_get_order_status_unit_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     exchange = "binance"
     order_id = f"ORD_{uuid.uuid4().hex[:6]}"
@@ -83,7 +67,6 @@ def test_get_queue_length_unit_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     exchange = "kraken"
 

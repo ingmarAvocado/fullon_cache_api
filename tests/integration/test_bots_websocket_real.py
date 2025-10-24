@@ -10,22 +10,6 @@ from starlette.testclient import TestClient
 pytestmark = [pytest.mark.integration, pytest.mark.redis]
 
 
-def _flush_db():
-    try:
-        from fullon_cache import BaseCache  # type: ignore
-
-        async def _do():
-            cache = BaseCache()
-            async with cache._redis_context() as redis:
-                await redis.flushdb()
-            await cache.close()
-
-        asyncio.get_event_loop().run_until_complete(_do())
-    except Exception:
-        # Best effort cleanup; tests still run if flush not possible
-        pass
-
-
 def test_get_bot_status_real_redis():
     try:
         from fullon_cache import BotCache  # type: ignore
@@ -34,7 +18,6 @@ def test_get_bot_status_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     async def _seed():
         cache = BotCache()
@@ -71,7 +54,6 @@ def test_is_blocked_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     async def _seed():
         cache = BotCache()
@@ -106,7 +88,6 @@ def test_get_bots_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     async def _seed():
         cache = BotCache()
@@ -137,7 +118,6 @@ def test_stream_bot_status_real_redis():
 
     app = create_app()
     client = TestClient(app)
-    _flush_db()
 
     async def _seed():
         cache = BotCache()
