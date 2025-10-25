@@ -1,6 +1,6 @@
 [project]
 name = "fullon_cache_api"
-version = "0.2.2"
+version = "0.2.3"
 description = "FastAPI Gateway for fullon_cache with LRRS-compliant architecture"
 authors = [{name = "Ingmar Frey", email = "ingmar.frey@gmail.com"}]
 readme = "README.md"
